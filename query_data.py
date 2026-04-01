@@ -1,314 +1,397 @@
 """
-Query Utility for MT5 Data
-Provides convenient functions to query and analyze collected OHLCV data
+Database module for MT5 Data Collector
+Handles PostgreSQL connection, schema creation, and data operations
 """
 
-import pandas as pd
-from datetime import datetime, timedelta
-from typing import Optional, List
-import argparse
+import psycopg2
+from psycopg2 import sql
+from psycopg2.extras import execute_values
+from contextlib import contextmanager
+from typing import List, Dict, Any, Optional
+import logging
 
-from database import DatabaseManager, get_database_summary
-from config import TIMEFRAME_ORDER
+from config import DB_CONFIG, TIMEFRAME_ORDER
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
-class DataQuery:
-    """Query interface for MT5 OHLCV data"""
+class DatabaseManager:
+    """Manages PostgreSQL database connections and operations"""
 
-    def __init__(self):
-        self.db = DatabaseManager()
+    def __init__(self, config: Dict[str, Any] = None):
+        self.config = config or DB_CONFIG
+        self.conn = None
 
-    def get_candles(
-        self,
-        timeframe: str,
-        limit: int = 1000,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        as_dataframe: bool = True
-    ):
+    @contextmanager
+    def get_connection(self):
+        """Context manager for database connections"""
+        conn = None
+        try:
+            conn = psycopg2.connect(**self.config)
+            yield conn
+            conn.commit()
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            logger.error(f"Database error: {e}")
+            raise
+        finally:
+            if conn:
+                conn.close()
+
+    @contextmanager
+    def get_cursor(self):
+        """Context manager for database cursors"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            try:
+                yield cursor
+            finally:
+                cursor.close()
+
+    def create_database(self) -> bool:
         """
-        Fetch candle data for a specific timeframe.
-        Returns pandas DataFrame or list of dicts.
+        Create the ustech_data database if it doesn't exist.
+        Returns True if created, False if already exists.
         """
-        query = """
-        SELECT * FROM ustech_ohlcv
-        WHERE timeframe = %s
+        temp_config = self.config.copy()
+        temp_config['database'] = 'postgres'
+
+        try:
+            conn = psycopg2.connect(**temp_config)
+            conn.autocommit = True
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s",
+                (self.config['database'],)
+            )
+
+            if cursor.fetchone() is None:
+                cursor.execute(
+                    sql.SQL("CREATE DATABASE {}").format(
+                        sql.Identifier(self.config['database'])
+                    )
+                )
+                logger.info(f"Database '{self.config['database']}' created successfully")
+                created = True
+            else:
+                logger.info(f"Database '{self.config['database']}' already exists")
+                created = False
+
+            cursor.close()
+            conn.close()
+            return created
+
+        except Exception as e:
+            logger.error(f"Error creating database: {e}")
+            raise
+
+    def create_table(self) -> None:
+        """Create the ustech_ohlcv table with all required columns including session"""
+
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS ustech_ohlcv (
+            id SERIAL PRIMARY KEY,
+            symbol TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            timestamp TIMESTAMP NOT NULL,
+            date DATE NOT NULL,
+            time TIME NOT NULL,
+            hour INTEGER NOT NULL,
+            day_of_week TEXT NOT NULL,
+            month INTEGER NOT NULL,
+            year INTEGER NOT NULL,
+            open DECIMAL(18, 6) NOT NULL,
+            high DECIMAL(18, 6) NOT NULL,
+            low DECIMAL(18, 6) NOT NULL,
+            close DECIMAL(18, 6) NOT NULL,
+            volume DECIMAL(18, 6) NOT NULL,
+            direction TEXT NOT NULL,
+            candle_size DECIMAL(18, 6) NOT NULL,
+            body_size DECIMAL(18, 6) NOT NULL,
+            wick_upper DECIMAL(18, 6) NOT NULL,
+            wick_lower DECIMAL(18, 6) NOT NULL,
+
+            -- Trading session label (asian, london, london_ny_overlap, new_york, off_hours)
+            session TEXT NOT NULL DEFAULT 'unknown',
+
+            -- Unique constraint to prevent duplicates
+            CONSTRAINT unique_symbol_timeframe_timestamp
+                UNIQUE (symbol, timeframe, timestamp)
+        );
         """
-        params = [timeframe]
 
-        if start_date:
-            query += " AND timestamp >= %s"
-            params.append(start_date)
+        with self.get_cursor() as cursor:
+            cursor.execute(create_table_sql)
+            logger.info("Table 'ustech_ohlcv' created/verified successfully")
 
-        if end_date:
-            query += " AND timestamp <= %s"
-            params.append(end_date)
-
-        query += " ORDER BY timestamp DESC LIMIT %s"
-        params.append(limit)
-
-        with self.db.get_cursor() as cursor:
-            cursor.execute(query, params)
-            columns = [desc[0] for desc in cursor.description]
-            rows = cursor.fetchall()
-
-            if as_dataframe:
-                return pd.DataFrame(rows, columns=columns)
-            return [dict(zip(columns, row)) for row in rows]
-
-    def get_latest_candles(self, timeframe: str, count: int = 10):
-        """Get the most recent candles for a timeframe"""
-        return self.get_candles(timeframe, limit=count)
-
-    def get_date_range(
-        self,
-        timeframe: str,
-        start_date: datetime,
-        end_date: datetime
-    ) -> pd.DataFrame:
-        """Get all candles within a date range"""
-        query = """
-        SELECT * FROM ustech_ohlcv
-        WHERE timeframe = %s
-        AND timestamp BETWEEN %s AND %s
-        ORDER BY timestamp ASC
+    def migrate_add_session_column(self) -> None:
+        """
+        Safe migration: adds the session column to an existing table if it doesn't exist.
+        Run this once if you already have data collected without the session column.
+        """
+        check_sql = """
+        SELECT column_name FROM information_schema.columns
+        WHERE table_name = 'ustech_ohlcv' AND column_name = 'session';
         """
 
-        with self.db.get_cursor() as cursor:
-            cursor.execute(query, (timeframe, start_date, end_date))
-            columns = [desc[0] for desc in cursor.description]
-            rows = cursor.fetchall()
-            return pd.DataFrame(rows, columns=columns)
+        add_column_sql = """
+        ALTER TABLE ustech_ohlcv
+        ADD COLUMN session TEXT NOT NULL DEFAULT 'unknown';
+        """
 
-    def get_statistics(self, timeframe: str) -> dict:
-        """Get statistical summary for a timeframe"""
-        query = """
+        with self.get_cursor() as cursor:
+            cursor.execute(check_sql)
+            exists = cursor.fetchone()
+
+            if not exists:
+                cursor.execute(add_column_sql)
+                logger.info("Migration complete: 'session' column added to ustech_ohlcv")
+            else:
+                logger.info("Migration skipped: 'session' column already exists")
+
+    def create_index(self) -> None:
+        """Create indexes for fast queries"""
+
+        indexes = [
+            # Existing: fast timeframe + time queries
+            """
+            CREATE INDEX IF NOT EXISTS idx_timeframe_timestamp
+            ON ustech_ohlcv (timeframe, timestamp DESC);
+            """,
+            # New: fast session-based queries for ML feature extraction
+            """
+            CREATE INDEX IF NOT EXISTS idx_session
+            ON ustech_ohlcv (session);
+            """,
+            # New: combined index for timeframe + session queries
+            """
+            CREATE INDEX IF NOT EXISTS idx_timeframe_session
+            ON ustech_ohlcv (timeframe, session);
+            """,
+        ]
+
+        with self.get_cursor() as cursor:
+            for index_sql in indexes:
+                cursor.execute(index_sql)
+        logger.info("All indexes created/verified successfully")
+
+    def create_view(self) -> None:
+        """
+        Create ustech_view that displays data grouped by timeframe
+        in the specified order, sorted newest to oldest within each block.
+        Now includes the session column.
+        """
+
+        case_parts = [f"WHEN '{tf}' THEN {order}"
+                      for tf, order in TIMEFRAME_ORDER.items()]
+        case_statement = "CASE timeframe " + " ".join(case_parts) + " ELSE 99 END"
+
+        create_view_sql = f"""
+        CREATE OR REPLACE VIEW ustech_view AS
         SELECT
-            COUNT(*) as total_candles,
-            MIN(timestamp) as first_candle,
-            MAX(timestamp) as last_candle,
-            AVG(candle_size) as avg_candle_size,
-            AVG(body_size) as avg_body_size,
-            AVG(volume) as avg_volume,
-            SUM(CASE WHEN direction = 'buy' THEN 1 ELSE 0 END) as buy_candles,
-            SUM(CASE WHEN direction = 'sell' THEN 1 ELSE 0 END) as sell_candles,
-            SUM(CASE WHEN direction = 'neutral' THEN 1 ELSE 0 END) as neutral_candles
-        FROM ustech_ohlcv
-        WHERE timeframe = %s
-        """
-
-        with self.db.get_cursor() as cursor:
-            cursor.execute(query, (timeframe,))
-            columns = [desc[0] for desc in cursor.description]
-            row = cursor.fetchone()
-            return dict(zip(columns, row))
-
-    def get_hourly_distribution(self, timeframe: str) -> pd.DataFrame:
-        """Get distribution of candles by hour (useful for ML features)"""
-        query = """
-        SELECT
+            id,
+            symbol,
+            timeframe,
+            timestamp,
+            date,
+            time,
             hour,
-            COUNT(*) as candle_count,
-            AVG(candle_size) as avg_candle_size,
-            SUM(CASE WHEN direction = 'buy' THEN 1 ELSE 0 END) as buy_count,
-            SUM(CASE WHEN direction = 'sell' THEN 1 ELSE 0 END) as sell_count
-        FROM ustech_ohlcv
-        WHERE timeframe = %s
-        GROUP BY hour
-        ORDER BY hour
-        """
-
-        with self.db.get_cursor() as cursor:
-            cursor.execute(query, (timeframe,))
-            columns = [desc[0] for desc in cursor.description]
-            rows = cursor.fetchall()
-            return pd.DataFrame(rows, columns=columns)
-
-    def get_daily_distribution(self, timeframe: str) -> pd.DataFrame:
-        """Get distribution of candles by day of week"""
-        day_order = "CASE day_of_week " + \
-                    "WHEN 'Monday' THEN 1 " + \
-                    "WHEN 'Tuesday' THEN 2 " + \
-                    "WHEN 'Wednesday' THEN 3 " + \
-                    "WHEN 'Thursday' THEN 4 " + \
-                    "WHEN 'Friday' THEN 5 " + \
-                    "WHEN 'Saturday' THEN 6 " + \
-                    "WHEN 'Sunday' THEN 7 END"
-
-        query = f"""
-        SELECT
             day_of_week,
-            COUNT(*) as candle_count,
-            AVG(candle_size) as avg_candle_size,
-            AVG(volume) as avg_volume
+            month,
+            year,
+            open,
+            high,
+            low,
+            close,
+            volume,
+            direction,
+            candle_size,
+            body_size,
+            wick_upper,
+            wick_lower,
+            session
         FROM ustech_ohlcv
-        WHERE timeframe = %s
-        GROUP BY day_of_week
-        ORDER BY {day_order}
+        ORDER BY
+            {case_statement},
+            timestamp DESC;
         """
 
-        with self.db.get_cursor() as cursor:
-            cursor.execute(query, (timeframe,))
-            columns = [desc[0] for desc in cursor.description]
-            rows = cursor.fetchall()
-            return pd.DataFrame(rows, columns=columns)
+        with self.get_cursor() as cursor:
+            cursor.execute(create_view_sql)
+            logger.info("View 'ustech_view' created/replaced successfully")
 
-    def export_to_csv(
-        self,
-        timeframe: str,
-        output_path: str,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
-    ) -> int:
-        """Export data to CSV file. Returns number of rows exported."""
+    def setup_schema(self) -> None:
+        """Complete schema setup: database, table, indexes, and view"""
+        logger.info("Starting database schema setup...")
+        self.create_database()
+        self.create_table()
+        self.migrate_add_session_column()
+        self.create_index()
+        self.create_view()
+        logger.info("Database schema setup completed successfully")
+
+    def insert_candles(self, candles: List[Dict[str, Any]]) -> int:
+        """
+        Insert candle data into the database.
+        Uses ON CONFLICT DO NOTHING to handle duplicates gracefully.
+        Returns the number of rows inserted.
+        """
+        if not candles:
+            return 0
+
+        insert_sql = """
+        INSERT INTO ustech_ohlcv (
+            symbol, timeframe, timestamp, date, time, hour,
+            day_of_week, month, year, open, high, low, close,
+            volume, direction, candle_size, body_size, wick_upper, wick_lower,
+            session
+        ) VALUES %s
+        ON CONFLICT (symbol, timeframe, timestamp) DO NOTHING;
+        """
+
+        values = [
+            (
+                c['symbol'], c['timeframe'], c['timestamp'], c['date'],
+                c['time'], c['hour'], c['day_of_week'], c['month'],
+                c['year'], c['open'], c['high'], c['low'], c['close'],
+                c['volume'], c['direction'], c['candle_size'],
+                c['body_size'], c['wick_upper'], c['wick_lower'],
+                c['session']
+            )
+            for c in candles
+        ]
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            execute_values(cursor, insert_sql, values)
+            inserted = cursor.rowcount
+            cursor.close()
+            return inserted
+
+    def get_latest_timestamp(self, symbol: str, timeframe: str) -> Optional[str]:
+        """Get the latest timestamp for a symbol/timeframe combination"""
+
         query = """
-        SELECT * FROM ustech_ohlcv
-        WHERE timeframe = %s
-        """
-        params = [timeframe]
-
-        if start_date:
-            query += " AND timestamp >= %s"
-            params.append(start_date)
-
-        if end_date:
-            query += " AND timestamp <= %s"
-            params.append(end_date)
-
-        query += " ORDER BY timestamp ASC"
-
-        with self.db.get_cursor() as cursor:
-            cursor.execute(query, params)
-            columns = [desc[0] for desc in cursor.description]
-            rows = cursor.fetchall()
-
-            df = pd.DataFrame(rows, columns=columns)
-            df.to_csv(output_path, index=False)
-            return len(df)
-
-    def get_ml_dataset(
-        self,
-        timeframe: str,
-        features: List[str] = None,
-        limit: int = None
-    ) -> pd.DataFrame:
-        """
-        Get a dataset optimized for machine learning.
-        Includes all numeric and categorical features.
-        """
-        if features is None:
-            features = [
-                'timestamp', 'hour', 'day_of_week', 'month', 'year',
-                'open', 'high', 'low', 'close', 'volume',
-                'direction', 'candle_size', 'body_size',
-                'wick_upper', 'wick_lower'
-            ]
-
-        feature_str = ', '.join(features)
-        query = f"""
-        SELECT {feature_str}
-        FROM ustech_ohlcv
-        WHERE timeframe = %s
-        ORDER BY timestamp ASC
+        SELECT MAX(timestamp) FROM ustech_ohlcv
+        WHERE symbol = %s AND timeframe = %s;
         """
 
-        if limit:
-            query += f" LIMIT {limit}"
+        with self.get_cursor() as cursor:
+            cursor.execute(query, (symbol, timeframe))
+            result = cursor.fetchone()
+            return result[0] if result and result[0] else None
 
-        with self.db.get_cursor() as cursor:
-            cursor.execute(query, (timeframe,))
-            columns = [desc[0] for desc in cursor.description]
-            rows = cursor.fetchall()
-            return pd.DataFrame(rows, columns=columns)
+    def get_row_count(self, timeframe: str = None) -> int:
+        """Get total row count, optionally filtered by timeframe"""
 
-
-def print_summary():
-    """Print database summary"""
-    print("\n" + "=" * 60)
-    print("Database Summary")
-    print("=" * 60)
-
-    summary = get_database_summary()
-
-    if not summary:
-        print("No data found in database.")
-        return
-
-    total_candles = 0
-
-    for row in summary:
-        tf = row['timeframe']
-        count = row['total_candles']
-        earliest = row['earliest']
-        latest = row['latest']
-        total_candles += count
-
-        print(f"\n{tf}:")
-        print(f"  Total candles: {count:,}")
-        print(f"  Date range: {earliest} to {latest}")
-
-    print(f"\n{'=' * 60}")
-    print(f"Total candles across all timeframes: {total_candles:,}")
-    print("=" * 60)
-
-
-def main():
-    parser = argparse.ArgumentParser(description='Query MT5 OHLCV Data')
-    parser.add_argument(
-        '--summary',
-        action='store_true',
-        help='Show database summary'
-    )
-    parser.add_argument(
-        '--timeframe',
-        type=str,
-        help='Timeframe to query (e.g., 1H, 4H, 1D)'
-    )
-    parser.add_argument(
-        '--latest',
-        type=int,
-        default=10,
-        help='Number of latest candles to show'
-    )
-    parser.add_argument(
-        '--stats',
-        action='store_true',
-        help='Show statistics for timeframe'
-    )
-    parser.add_argument(
-        '--export',
-        type=str,
-        help='Export to CSV file path'
-    )
-
-    args = parser.parse_args()
-
-    if args.summary:
-        print_summary()
-        return
-
-    if args.timeframe:
-        query = DataQuery()
-
-        if args.stats:
-            print(f"\nStatistics for {args.timeframe}:")
-            print("-" * 40)
-            stats = query.get_statistics(args.timeframe)
-            for key, value in stats.items():
-                print(f"  {key}: {value}")
-
-        elif args.export:
-            count = query.export_to_csv(args.timeframe, args.export)
-            print(f"Exported {count:,} rows to {args.export}")
-
+        if timeframe:
+            query = "SELECT COUNT(*) FROM ustech_ohlcv WHERE timeframe = %s;"
+            params = (timeframe,)
         else:
-            print(f"\nLatest {args.latest} candles for {args.timeframe}:")
-            df = query.get_latest_candles(args.timeframe, args.latest)
-            print(df.to_string())
+            query = "SELECT COUNT(*) FROM ustech_ohlcv;"
+            params = None
 
-    else:
-        print_summary()
+        with self.get_cursor() as cursor:
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            return cursor.fetchone()[0]
+
+    def get_summary(self) -> List[Dict[str, Any]]:
+        """Get summary statistics grouped by timeframe"""
+
+        query = """
+        SELECT
+            timeframe,
+            COUNT(*) as total_candles,
+            MIN(timestamp) as earliest,
+            MAX(timestamp) as latest
+        FROM ustech_ohlcv
+        GROUP BY timeframe
+        ORDER BY
+            CASE timeframe
+                WHEN '1min' THEN 1
+                WHEN '2min' THEN 2
+                WHEN '3min' THEN 3
+                WHEN '4min' THEN 4
+                WHEN '5min' THEN 5
+                WHEN '10min' THEN 6
+                WHEN '15min' THEN 7
+                WHEN '30min' THEN 8
+                WHEN '1H' THEN 9
+                WHEN '4H' THEN 10
+                WHEN '1D' THEN 11
+                ELSE 99
+            END;
+        """
+
+        with self.get_cursor() as cursor:
+            cursor.execute(query)
+            columns = [desc[0] for desc in cursor.description]
+            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    def get_session_summary(self, timeframe: str = None) -> List[Dict[str, Any]]:
+        """
+        Get candle count breakdown by session.
+        Optionally filtered by timeframe.
+        Useful for verifying session labeling is working correctly.
+        """
+        if timeframe:
+            query = """
+            SELECT
+                session,
+                COUNT(*) as total_candles,
+                ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as pct
+            FROM ustech_ohlcv
+            WHERE timeframe = %s
+            GROUP BY session
+            ORDER BY total_candles DESC;
+            """
+            params = (timeframe,)
+        else:
+            query = """
+            SELECT
+                session,
+                COUNT(*) as total_candles,
+                ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as pct
+            FROM ustech_ohlcv
+            GROUP BY session
+            ORDER BY total_candles DESC;
+            """
+            params = None
+
+        with self.get_cursor() as cursor:
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+            columns = [desc[0] for desc in cursor.description]
+            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+
+# Standalone functions for quick access
+def setup_database():
+    """Quick function to setup the complete database schema"""
+    db = DatabaseManager()
+    db.setup_schema()
+    return db
+
+
+def get_database_summary():
+    """Quick function to get database summary"""
+    db = DatabaseManager()
+    return db.get_summary()
 
 
 if __name__ == "__main__":
-    main()
+    print("Setting up database schema...")
+    setup_database()
+    print("Done!")

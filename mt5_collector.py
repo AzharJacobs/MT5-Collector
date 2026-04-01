@@ -1,7 +1,7 @@
 """
 MT5 Data Collector
-Fetches historical OHLCV data from MetaTrader 5 and stores it in PostgreSQL
-With production logging and data validation
+Fetches historical OHLCV data from MetaTrader 5 and stores it in PostgreSQL.
+Includes trading session labeling (Asian, London, London/NY Overlap, New York).
 """
 
 import MetaTrader5 as mt5
@@ -21,22 +21,75 @@ setup_logging()
 logger = get_logger('mt5_collector')
 
 
+# ---------------------------------------------------------------------------
+# Session Classification
+# ---------------------------------------------------------------------------
+# All session boundaries are defined in UTC.
+# MT5 broker timestamps are typically in broker local time (GMT+2 or GMT+3).
+# Set BROKER_UTC_OFFSET to match your broker:
+#   - Most brokers (ICMarkets, Pepperstone, etc.) use GMT+2 (winter) / GMT+3 (summer DST)
+#   - Check your broker's server time vs UTC and set accordingly.
+#   - You can verify with: mt5.terminal_info() after connecting.
+#
+# Session windows (UTC):
+#   Asian              00:00 - 07:00
+#   London             07:00 - 12:00
+#   London / NY Overlap 12:00 - 16:00
+#   New York           16:00 - 21:00
+#   Off Hours          21:00 - 00:00
+# ---------------------------------------------------------------------------
+BROKER_UTC_OFFSET = 2  # Change to 3 if your broker uses GMT+3
+
+
+def get_session(timestamp: pd.Timestamp, broker_utc_offset: int = BROKER_UTC_OFFSET) -> str:
+    """
+    Classify a candle timestamp into a trading session.
+
+    Converts broker local time to UTC using the configured offset,
+    then maps to one of five session labels:
+        - 'asian'              00:00-07:00 UTC
+        - 'london'             07:00-12:00 UTC
+        - 'london_ny_overlap'  12:00-16:00 UTC  (highest volume window)
+        - 'new_york'           16:00-21:00 UTC
+        - 'off_hours'          21:00-00:00 UTC
+
+    Args:
+        timestamp:         Candle open time in broker local time.
+        broker_utc_offset: Hours to subtract to convert broker time → UTC.
+
+    Returns:
+        Session label as a string.
+    """
+    utc_hour = (timestamp.hour - broker_utc_offset) % 24
+
+    if 0 <= utc_hour < 7:
+        return "asian"
+    elif 7 <= utc_hour < 12:
+        return "london"
+    elif 12 <= utc_hour < 16:
+        return "london_ny_overlap"
+    elif 16 <= utc_hour < 21:
+        return "new_york"
+    else:
+        return "off_hours"
+
+
 class MT5Collector:
     """Handles MetaTrader 5 connection and data collection"""
 
     # MT5 timeframe constants mapping
     TIMEFRAME_MAP = {
-        "TIMEFRAME_M1": mt5.TIMEFRAME_M1,
-        "TIMEFRAME_M2": mt5.TIMEFRAME_M2,
-        "TIMEFRAME_M3": mt5.TIMEFRAME_M3,
-        "TIMEFRAME_M4": mt5.TIMEFRAME_M4,
-        "TIMEFRAME_M5": mt5.TIMEFRAME_M5,
+        "TIMEFRAME_M1":  mt5.TIMEFRAME_M1,
+        "TIMEFRAME_M2":  mt5.TIMEFRAME_M2,
+        "TIMEFRAME_M3":  mt5.TIMEFRAME_M3,
+        "TIMEFRAME_M4":  mt5.TIMEFRAME_M4,
+        "TIMEFRAME_M5":  mt5.TIMEFRAME_M5,
         "TIMEFRAME_M10": mt5.TIMEFRAME_M10,
         "TIMEFRAME_M15": mt5.TIMEFRAME_M15,
         "TIMEFRAME_M30": mt5.TIMEFRAME_M30,
-        "TIMEFRAME_H1": mt5.TIMEFRAME_H1,
-        "TIMEFRAME_H4": mt5.TIMEFRAME_H4,
-        "TIMEFRAME_D1": mt5.TIMEFRAME_D1,
+        "TIMEFRAME_H1":  mt5.TIMEFRAME_H1,
+        "TIMEFRAME_H4":  mt5.TIMEFRAME_H4,
+        "TIMEFRAME_D1":  mt5.TIMEFRAME_D1,
     }
 
     # Days of week mapping
@@ -54,11 +107,13 @@ class MT5Collector:
         self,
         symbol: str = SYMBOL,
         chunk_size: int = CHUNK_SIZE,
-        enable_validation: bool = True
+        enable_validation: bool = True,
+        broker_utc_offset: int = BROKER_UTC_OFFSET
     ):
         self.symbol = symbol
         self.chunk_size = chunk_size
         self.enable_validation = enable_validation
+        self.broker_utc_offset = broker_utc_offset
         self.db = DatabaseManager()
         self.initialized = False
         self.collection_logger = CollectionLogger()
@@ -71,6 +126,11 @@ class MT5Collector:
             )
         else:
             self.validator = None
+
+        logger.info(
+            f"MT5Collector initialized | symbol={symbol} | "
+            f"broker_utc_offset=GMT+{broker_utc_offset}"
+        )
 
     def initialize(self) -> bool:
         """Initialize MT5 connection"""
@@ -95,11 +155,18 @@ class MT5Collector:
 
         self.initialized = True
 
-        # Print terminal info
+        # Log terminal info
         terminal_info = mt5.terminal_info()
         if terminal_info:
             logger.info(f"MT5 Terminal: {terminal_info.name}")
             logger.info(f"MT5 Version: {terminal_info.build}")
+
+        # Remind about broker offset
+        logger.info(
+            f"Session labeling active | broker offset: GMT+{self.broker_utc_offset} | "
+            f"Sessions: asian(00-07 UTC), london(07-12 UTC), "
+            f"london_ny_overlap(12-16 UTC), new_york(16-21 UTC), off_hours(21-00 UTC)"
+        )
 
         return True
 
@@ -115,17 +182,15 @@ class MT5Collector:
 
         if symbol_info is None:
             logger.error(f"Symbol '{self.symbol}' not found")
-            # Try to find similar symbols
             all_symbols = mt5.symbols_get()
             if all_symbols:
                 similar = [s.name for s in all_symbols
-                          if 'TECH' in s.name.upper() or 'NAS' in s.name.upper()][:5]
+                           if 'TECH' in s.name.upper() or 'NAS' in s.name.upper()][:5]
                 if similar:
                     logger.info(f"Similar symbols found: {similar}")
             return False
 
         if not symbol_info.visible:
-            # Try to enable the symbol
             if not mt5.symbol_select(self.symbol, True):
                 logger.error(f"Failed to select symbol '{self.symbol}'")
                 return False
@@ -140,20 +205,24 @@ class MT5Collector:
         timeframe_name: str
     ) -> List[Dict[str, Any]]:
         """
-        Calculate all derived columns from OHLCV data.
+        Calculate all derived columns from OHLCV data including session label.
         Returns a list of dictionaries ready for database insertion.
+
+        Session is determined by converting the broker timestamp to UTC
+        using self.broker_utc_offset, then mapping to a named session window.
+        Daily candles (1D) are always labeled 'daily' since they span all sessions.
         """
         candles = []
 
         for _, row in df.iterrows():
             timestamp = pd.to_datetime(row['time'], unit='s')
-            open_price = float(row['open'])
-            high_price = float(row['high'])
-            low_price = float(row['low'])
+            open_price  = float(row['open'])
+            high_price  = float(row['high'])
+            low_price   = float(row['low'])
             close_price = float(row['close'])
-            volume = float(row['tick_volume'])  # MT5 uses tick_volume
+            volume      = float(row['tick_volume'])
 
-            # Calculate direction (handles neutral case when close == open)
+            # Direction
             if close_price > open_price:
                 direction = "buy"
             elif close_price < open_price:
@@ -161,32 +230,40 @@ class MT5Collector:
             else:
                 direction = "neutral"
 
-            # Calculate candle metrics
+            # Candle metrics
             candle_size = high_price - low_price
-            body_size = abs(close_price - open_price)
-            wick_upper = high_price - max(open_price, close_price)
-            wick_lower = min(open_price, close_price) - low_price
+            body_size   = abs(close_price - open_price)
+            wick_upper  = high_price - max(open_price, close_price)
+            wick_lower  = min(open_price, close_price) - low_price
+
+            # Session label
+            # Daily candles span all sessions so we mark them separately
+            if timeframe_name == "1D":
+                session = "daily"
+            else:
+                session = get_session(timestamp, self.broker_utc_offset)
 
             candle = {
-                'symbol': self.symbol,
-                'timeframe': timeframe_name,
-                'timestamp': timestamp,
-                'date': timestamp.date(),
-                'time': timestamp.time(),
-                'hour': timestamp.hour,
+                'symbol':      self.symbol,
+                'timeframe':   timeframe_name,
+                'timestamp':   timestamp,
+                'date':        timestamp.date(),
+                'time':        timestamp.time(),
+                'hour':        timestamp.hour,
                 'day_of_week': self.DAYS_OF_WEEK[timestamp.weekday()],
-                'month': timestamp.month,
-                'year': timestamp.year,
-                'open': open_price,
-                'high': high_price,
-                'low': low_price,
-                'close': close_price,
-                'volume': volume,
-                'direction': direction,
+                'month':       timestamp.month,
+                'year':        timestamp.year,
+                'open':        open_price,
+                'high':        high_price,
+                'low':         low_price,
+                'close':       close_price,
+                'volume':      volume,
+                'direction':   direction,
                 'candle_size': candle_size,
-                'body_size': body_size,
-                'wick_upper': wick_upper,
-                'wick_lower': wick_lower
+                'body_size':   body_size,
+                'wick_upper':  wick_upper,
+                'wick_lower':  wick_lower,
+                'session':     session,
             }
             candles.append(candle)
 
@@ -199,25 +276,23 @@ class MT5Collector:
     ) -> Tuple[List[Dict[str, Any]], int]:
         """
         Validate candles and filter out invalid ones.
-        Returns (valid_candles, invalid_count)
+        Returns (valid_candles, invalid_count).
         """
         if not self.enable_validation or self.validator is None:
             return candles, 0
 
         result = self.validator.validate_batch(candles)
 
-        # Log validation warnings
         if result.warning_count > 0:
             logger.debug(
                 f"{timeframe}: {result.warning_count} candles with warnings"
             )
 
-        # Log validation errors
         if result.invalid_count > 0:
             logger.warning(
                 f"{timeframe}: {result.invalid_count} invalid candles filtered out"
             )
-            for candle, errors in result.invalid_candles[:5]:  # Log first 5
+            for candle, errors in result.invalid_candles[:5]:
                 logger.debug(f"  Invalid candle at {candle.get('timestamp')}: {errors}")
 
         return result.valid_candles, result.invalid_count
@@ -231,6 +306,7 @@ class MT5Collector:
     ) -> Tuple[int, int, int]:
         """
         Fetch historical data for a specific timeframe in chunks.
+        Walks backwards in time from end_date to start_date.
         Returns tuple of (total_fetched, total_inserted, total_invalid).
         """
         if not self.initialized:
@@ -240,21 +316,23 @@ class MT5Collector:
             end_date = datetime.now()
 
         if start_date is None:
-            # Fetch maximum available history
             start_date = datetime(2000, 1, 1)
 
-        logger.info(f"Fetching {timeframe_name} data from {start_date} to {end_date}")
+        logger.info(f"Fetching {timeframe_name} from {start_date} to {end_date}")
         self.collection_logger.log_timeframe_start(timeframe_name)
 
-        total_fetched = 0
-        total_inserted = 0
-        total_invalid = 0
-        current_end = end_date
+        total_fetched    = 0
+        total_inserted   = 0
+        total_invalid    = 0
+        current_end      = end_date
         consecutive_empty = 0
         max_consecutive_empty = 3
 
+        # Session distribution tracker for logging
+        session_counts: Dict[str, int] = {}
+
         while current_end > start_date and consecutive_empty < max_consecutive_empty:
-            # Fetch a chunk of data
+
             rates = mt5.copy_rates_range(
                 self.symbol,
                 timeframe_const,
@@ -266,42 +344,44 @@ class MT5Collector:
                 consecutive_empty += 1
                 logger.debug(f"No more data for {timeframe_name} before {current_end}")
 
-                # Move back in time and try again
+                # Step back and retry
                 if timeframe_name == "1D":
-                    current_end = current_end - timedelta(days=365)
+                    current_end -= timedelta(days=365)
                 elif timeframe_name in ["1H", "4H"]:
-                    current_end = current_end - timedelta(days=30)
+                    current_end -= timedelta(days=30)
                 else:
-                    current_end = current_end - timedelta(days=7)
+                    current_end -= timedelta(days=7)
                 continue
 
             consecutive_empty = 0
 
-            # Convert to DataFrame
             df = pd.DataFrame(rates)
             chunk_size = len(df)
             total_fetched += chunk_size
 
-            # Calculate derived columns
+            # Calculate derived columns (includes session)
             candles = self.calculate_derived_columns(df, timeframe_name)
 
-            # Validate and filter candles
+            # Track session distribution for this chunk
+            for c in candles:
+                s = c['session']
+                session_counts[s] = session_counts.get(s, 0) + 1
+
+            # Validate and filter
             valid_candles, invalid_count = self.validate_and_filter_candles(
                 candles, timeframe_name
             )
             total_invalid += invalid_count
 
-            # Insert valid candles into database
+            # Insert into database
+            inserted = 0
             if valid_candles:
                 inserted = self.db.insert_candles(valid_candles)
                 total_inserted += inserted
-            else:
-                inserted = 0
 
-            # Get the earliest timestamp from this chunk for next iteration
+            # Earliest timestamp in this chunk
             earliest_time = pd.to_datetime(df['time'].min(), unit='s')
 
-            # Log chunk progress
             self.collection_logger.log_chunk_processed(
                 timeframe=timeframe_name,
                 fetched=chunk_size,
@@ -316,15 +396,19 @@ class MT5Collector:
                 f"(up to {earliest_time})"
             )
 
-            # If we got fewer records than expected, we've reached the beginning
+            # Reached beginning of available data
             if chunk_size < self.chunk_size / 2:
                 break
 
-            # Move the end date back for next chunk
             current_end = earliest_time - timedelta(seconds=1)
-
-            # Small delay to avoid overwhelming MT5
             time.sleep(0.1)
+
+        # Log session distribution summary for this timeframe
+        if session_counts:
+            session_summary = ", ".join(
+                f"{s}={n:,}" for s, n in sorted(session_counts.items())
+            )
+            logger.info(f"  {timeframe_name} session breakdown: {session_summary}")
 
         self.collection_logger.log_timeframe_complete(
             timeframe_name, total_fetched, total_inserted
@@ -341,15 +425,12 @@ class MT5Collector:
         Fetch only new data since the last stored timestamp.
         Returns tuple of (total_fetched, total_inserted, total_invalid).
         """
-        # Get the latest timestamp from database
         latest = self.db.get_latest_timestamp(self.symbol, timeframe_name)
 
         if latest:
-            # Start from the next second after the latest stored candle
             start_date = latest + timedelta(seconds=1)
             logger.info(f"Incremental fetch for {timeframe_name} from {start_date}")
         else:
-            # No data exists, do a full fetch
             start_date = None
             logger.info(f"No existing data for {timeframe_name}, doing full fetch")
 
@@ -364,8 +445,8 @@ class MT5Collector:
         incremental: bool = True
     ) -> Dict[str, Dict[str, int]]:
         """
-        Collect data for all configured timeframes.
-        Returns a summary dictionary.
+        Collect data for all configured timeframes sequentially.
+        Returns a summary dictionary per timeframe.
         """
         results = {}
 
@@ -383,9 +464,9 @@ class MT5Collector:
                     )
 
                 results[timeframe_name] = {
-                    'fetched': fetched,
+                    'fetched':  fetched,
                     'inserted': inserted,
-                    'invalid': invalid
+                    'invalid':  invalid
                 }
 
             except Exception as e:
@@ -393,10 +474,10 @@ class MT5Collector:
                     f"Error collecting {timeframe_name}", e
                 )
                 results[timeframe_name] = {
-                    'fetched': 0,
+                    'fetched':  0,
                     'inserted': 0,
-                    'invalid': 0,
-                    'error': str(e)
+                    'invalid':  0,
+                    'error':    str(e)
                 }
 
         return results
@@ -410,40 +491,35 @@ class MT5Collector:
         Main entry point: Initialize MT5, setup database, and collect data.
         """
         results = {
-            'success': False,
-            'message': '',
+            'success':    False,
+            'message':    '',
             'timeframes': {},
-            'stats': {}
+            'stats':      {}
         }
 
         mode = 'incremental' if incremental else 'full'
         self.collection_logger.start_collection(self.symbol, mode)
 
         try:
-            # Setup database schema if requested
             if setup_db:
                 logger.info("Setting up database schema...")
                 self.db.setup_schema()
 
-            # Initialize MT5
             if not self.initialize():
                 results['message'] = "Failed to initialize MT5"
                 self.collection_logger.log_error(results['message'])
                 return results
 
-            # Check symbol availability
             if not self.check_symbol():
                 results['message'] = f"Symbol '{self.symbol}' not available"
                 self.collection_logger.log_error(results['message'])
                 return results
 
-            # Collect data for all timeframes
             logger.info("Starting data collection...")
             results['timeframes'] = self.collect_all_timeframes(incremental=incremental)
 
-            # Get summary
-            summary = self.db.get_summary()
-            results['summary'] = summary
+            results['summary'] = self.db.get_summary()
+            results['session_summary'] = self.db.get_session_summary()
 
             results['success'] = True
             results['message'] = "Data collection completed successfully"
@@ -454,7 +530,6 @@ class MT5Collector:
 
         finally:
             self.shutdown()
-            # Get collection stats
             results['stats'] = self.collection_logger.end_collection(results['success'])
 
         return results
@@ -487,6 +562,13 @@ def main():
         help='Disable data validation (faster but less safe)'
     )
     parser.add_argument(
+        '--broker-offset',
+        type=int,
+        default=BROKER_UTC_OFFSET,
+        help=f'Broker UTC offset in hours (default: {BROKER_UTC_OFFSET}). '
+             f'Use 2 for GMT+2, 3 for GMT+3'
+    )
+    parser.add_argument(
         '--quiet',
         action='store_true',
         help='Reduce console output'
@@ -494,7 +576,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Adjust log level if quiet mode
     if args.quiet:
         import logging
         logging.getLogger('mt5_collector').setLevel(logging.WARNING)
@@ -502,15 +583,18 @@ def main():
     print("=" * 60)
     print("MT5 OHLCV Data Collector")
     print("=" * 60)
-    print(f"Symbol: {args.symbol}")
-    print(f"Mode: {'Full History' if args.full else 'Incremental'}")
+    print(f"Symbol:         {args.symbol}")
+    print(f"Mode:           {'Full History' if args.full else 'Incremental'}")
     print(f"Database Setup: {'Skipped' if args.skip_db_setup else 'Enabled'}")
-    print(f"Validation: {'Disabled' if args.no_validation else 'Enabled'}")
+    print(f"Validation:     {'Disabled' if args.no_validation else 'Enabled'}")
+    print(f"Broker Offset:  GMT+{args.broker_offset}")
+    print(f"Sessions:       asian | london | london_ny_overlap | new_york | off_hours")
     print("=" * 60)
 
     collector = MT5Collector(
         symbol=args.symbol,
-        enable_validation=not args.no_validation
+        enable_validation=not args.no_validation,
+        broker_utc_offset=args.broker_offset
     )
     results = collector.run(
         setup_db=not args.skip_db_setup,
@@ -526,17 +610,17 @@ def main():
         print("\nTimeframe Summary:")
         print("-" * 40)
 
-        total_fetched = 0
+        total_fetched  = 0
         total_inserted = 0
-        total_invalid = 0
+        total_invalid  = 0
 
         for tf, data in results['timeframes'].items():
-            fetched = data.get('fetched', 0)
+            fetched  = data.get('fetched', 0)
             inserted = data.get('inserted', 0)
-            invalid = data.get('invalid', 0)
-            total_fetched += fetched
+            invalid  = data.get('invalid', 0)
+            total_fetched  += fetched
             total_inserted += inserted
-            total_invalid += invalid
+            total_invalid  += invalid
 
             status = f"Fetched {fetched:,}, Inserted {inserted:,}"
             if invalid > 0:
@@ -549,6 +633,14 @@ def main():
             summary_line += f", Invalid {total_invalid:,}"
         print(summary_line)
 
+        # Session breakdown
+        if 'session_summary' in results and results['session_summary']:
+            print("\nSession Breakdown (all timeframes):")
+            print("-" * 40)
+            for row in results['session_summary']:
+                print(f"  {row['session']:20s}: {row['total_candles']:>10,} candles  ({row['pct']}%)")
+
+        # Database summary
         if 'summary' in results:
             print("\nDatabase Summary:")
             print("-" * 40)
@@ -560,7 +652,6 @@ def main():
         print(f"Status: FAILED")
         print(f"Message: {results['message']}")
 
-    # Print stats if available
     if 'stats' in results and results['stats'].get('errors'):
         print("\nErrors encountered:")
         for err in results['stats']['errors'][:5]:
