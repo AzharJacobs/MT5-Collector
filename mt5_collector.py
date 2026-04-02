@@ -306,7 +306,7 @@ class MT5Collector:
     ) -> Tuple[int, int, int]:
         """
         Fetch historical data for a specific timeframe in chunks.
-        Walks backwards in time from end_date to start_date.
+        For lower timeframes, uses sliding window to avoid MT5 bar limits.
         Returns tuple of (total_fetched, total_inserted, total_invalid).
         """
         if not self.initialized:
@@ -324,84 +324,155 @@ class MT5Collector:
         total_fetched    = 0
         total_inserted   = 0
         total_invalid    = 0
-        current_end      = end_date
-        consecutive_empty = 0
-        max_consecutive_empty = 3
 
         # Session distribution tracker for logging
         session_counts: Dict[str, int] = {}
 
-        while current_end > start_date and consecutive_empty < max_consecutive_empty:
+        # For lower timeframes, use sliding window to avoid MT5 limits
+        if timeframe_name in ["1min", "2min", "3min", "4min", "5min", "10min", "15min", "30min"]:
+            window_days = 30  # Fetch 30 days at a time
+        elif timeframe_name in ["1H"]:
+            window_days = 90  # 90 days for 1H
+        else:
+            window_days = None  # No limit for 4H, 1D
 
-            rates = mt5.copy_rates_range(
-                self.symbol,
-                timeframe_const,
-                start_date,
-                current_end
-            )
+        if window_days:
+            # Sliding window approach for lower timeframes
+            current_end = end_date
+            
+            while current_end > start_date:
+                current_start = max(start_date, current_end - timedelta(days=window_days))
+                
+                rates = mt5.copy_rates_range(
+                    self.symbol,
+                    timeframe_const,
+                    current_start,
+                    current_end
+                )
+                
+                if rates is None or len(rates) == 0:
+                    current_end = current_start - timedelta(seconds=1)
+                    continue
+                    
+                df = pd.DataFrame(rates)
+                chunk_size = len(df)
+                total_fetched += chunk_size
 
-            if rates is None or len(rates) == 0:
-                consecutive_empty += 1
-                logger.debug(f"No more data for {timeframe_name} before {current_end}")
+                # Calculate derived columns (includes session)
+                candles = self.calculate_derived_columns(df, timeframe_name)
 
-                # Step back and retry
-                if timeframe_name == "1D":
-                    current_end -= timedelta(days=365)
-                elif timeframe_name in ["1H", "4H"]:
-                    current_end -= timedelta(days=30)
-                else:
-                    current_end -= timedelta(days=7)
-                continue
+                # Track session distribution for this chunk
+                for c in candles:
+                    s = c['session']
+                    session_counts[s] = session_counts.get(s, 0) + 1
 
+                # Validate and filter
+                valid_candles, invalid_count = self.validate_and_filter_candles(
+                    candles, timeframe_name
+                )
+                total_invalid += invalid_count
+
+                # Insert into database
+                inserted = 0
+                if valid_candles:
+                    inserted = self.db.insert_candles(valid_candles)
+                    total_inserted += inserted
+
+                # Earliest timestamp in this chunk
+                earliest_time = pd.to_datetime(df['time'].min(), unit='s')
+
+                self.collection_logger.log_chunk_processed(
+                    timeframe=timeframe_name,
+                    fetched=chunk_size,
+                    inserted=inserted,
+                    invalid=invalid_count,
+                    earliest=str(earliest_time)
+                )
+
+                logger.info(
+                    f"  {timeframe_name}: Fetched {chunk_size}, "
+                    f"inserted {inserted}, invalid {invalid_count} "
+                    f"(up to {earliest_time})"
+                )
+
+                current_end = current_start - timedelta(seconds=1)
+        else:
+            # Original logic for higher timeframes (4H, 1D)
+            current_end      = end_date
             consecutive_empty = 0
+            max_consecutive_empty = 3
 
-            df = pd.DataFrame(rates)
-            chunk_size = len(df)
-            total_fetched += chunk_size
+            while current_end > start_date and consecutive_empty < max_consecutive_empty:
 
-            # Calculate derived columns (includes session)
-            candles = self.calculate_derived_columns(df, timeframe_name)
+                rates = mt5.copy_rates_range(
+                    self.symbol,
+                    timeframe_const,
+                    start_date,
+                    current_end
+                )
 
-            # Track session distribution for this chunk
-            for c in candles:
-                s = c['session']
-                session_counts[s] = session_counts.get(s, 0) + 1
+                if rates is None or len(rates) == 0:
+                    consecutive_empty += 1
+                    logger.debug(f"No more data for {timeframe_name} before {current_end}")
 
-            # Validate and filter
-            valid_candles, invalid_count = self.validate_and_filter_candles(
-                candles, timeframe_name
-            )
-            total_invalid += invalid_count
+                    # Step back and retry
+                    if timeframe_name == "1D":
+                        current_end -= timedelta(days=365)
+                    elif timeframe_name in ["1H", "4H"]:
+                        current_end -= timedelta(days=30)
+                    else:
+                        current_end -= timedelta(days=7)
+                    continue
 
-            # Insert into database
-            inserted = 0
-            if valid_candles:
-                inserted = self.db.insert_candles(valid_candles)
-                total_inserted += inserted
+                consecutive_empty = 0
 
-            # Earliest timestamp in this chunk
-            earliest_time = pd.to_datetime(df['time'].min(), unit='s')
+                df = pd.DataFrame(rates)
+                chunk_size = len(df)
+                total_fetched += chunk_size
 
-            self.collection_logger.log_chunk_processed(
-                timeframe=timeframe_name,
-                fetched=chunk_size,
-                inserted=inserted,
-                invalid=invalid_count,
-                earliest=str(earliest_time)
-            )
+                # Calculate derived columns (includes session)
+                candles = self.calculate_derived_columns(df, timeframe_name)
 
-            logger.info(
-                f"  {timeframe_name}: Fetched {chunk_size}, "
-                f"inserted {inserted}, invalid {invalid_count} "
-                f"(up to {earliest_time})"
-            )
+                # Track session distribution for this chunk
+                for c in candles:
+                    s = c['session']
+                    session_counts[s] = session_counts.get(s, 0) + 1
 
-            # Reached beginning of available data
-            if chunk_size < self.chunk_size / 2:
-                break
+                # Validate and filter
+                valid_candles, invalid_count = self.validate_and_filter_candles(
+                    candles, timeframe_name
+                )
+                total_invalid += invalid_count
 
-            current_end = earliest_time - timedelta(seconds=1)
-            time.sleep(0.1)
+                # Insert into database
+                inserted = 0
+                if valid_candles:
+                    inserted = self.db.insert_candles(valid_candles)
+                    total_inserted += inserted
+
+                # Earliest timestamp in this chunk
+                earliest_time = pd.to_datetime(df['time'].min(), unit='s')
+
+                self.collection_logger.log_chunk_processed(
+                    timeframe=timeframe_name,
+                    fetched=chunk_size,
+                    inserted=inserted,
+                    invalid=invalid_count,
+                    earliest=str(earliest_time)
+                )
+
+                logger.info(
+                    f"  {timeframe_name}: Fetched {chunk_size}, "
+                    f"inserted {inserted}, invalid {invalid_count} "
+                    f"(up to {earliest_time})"
+                )
+
+                # Reached beginning of available data
+                if chunk_size < self.chunk_size / 2:
+                    break
+
+                current_end = earliest_time - timedelta(seconds=1)
+                time.sleep(0.1)
 
         # Log session distribution summary for this timeframe
         if session_counts:

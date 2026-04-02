@@ -1,0 +1,14 @@
+2026-04-01 20:34:51 | ERROR    | mt5_collector        | mt5_collector.py:184 | Symbol 'USTech' not found
+2026-04-01 20:34:51 | ERROR    | mt5_collector.collection | logger.py:259 | Symbol 'USTech' not available
+2026-04-01 20:36:33 | ERROR    | mt5_collector.collection | logger.py:257 | Error during data collection: 'DatabaseManager' object has no attribute 'get_session_summary': 'DatabaseManager' object has no attribute 'get_session_summary'
+Traceback (most recent call last):
+  File "F:\MT5-Collector\mt5_collector.py", line 522, in run
+    results['session_summary'] = self.db.get_session_summary()
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DatabaseManager' object has no attribute 'get_session_summary'
+2026-04-01 20:38:46 | ERROR    | mt5_collector.collection | logger.py:257 | Error during data collection: 'DatabaseManager' object has no attribute 'get_session_summary': 'DatabaseManager' object has no attribute 'get_session_summary'
+Traceback (most recent call last):
+  File "F:\MT5-Collector\mt5_collector.py", line 522, in run
+    results['session_summary'] = self.db.get_session_summary()
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DatabaseManager' object has no attribute 'get_session_summary'

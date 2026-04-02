@@ -9,6 +9,10 @@ from psycopg2.extras import execute_values
 from contextlib import contextmanager
 from typing import List, Dict, Any, Optional
 import logging
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+import MetaTrader5 as mt5
 
 from config import DB_CONFIG, TIMEFRAME_ORDER
 
@@ -119,6 +123,7 @@ class DatabaseManager:
             body_size DECIMAL(18, 6) NOT NULL,
             wick_upper DECIMAL(18, 6) NOT NULL,
             wick_lower DECIMAL(18, 6) NOT NULL,
+            session TEXT NOT NULL DEFAULT 'unknown',
 
             -- Unique constraint to prevent duplicates
             CONSTRAINT unique_symbol_timeframe_timestamp
@@ -175,7 +180,8 @@ class DatabaseManager:
             candle_size,
             body_size,
             wick_upper,
-            wick_lower
+            wick_lower,
+            session
         FROM ustech_ohlcv
         ORDER BY
             {case_statement},
@@ -191,6 +197,7 @@ class DatabaseManager:
         logger.info("Starting database schema setup...")
         self.create_database()
         self.create_table()
+        self.migrate_add_session_column()  # Add session column if missing
         self.create_index()
         self.create_view()
         logger.info("Database schema setup completed successfully")
@@ -208,7 +215,7 @@ class DatabaseManager:
         INSERT INTO ustech_ohlcv (
             symbol, timeframe, timestamp, date, time, hour,
             day_of_week, month, year, open, high, low, close,
-            volume, direction, candle_size, body_size, wick_upper, wick_lower
+            volume, direction, candle_size, body_size, wick_upper, wick_lower, session
         ) VALUES %s
         ON CONFLICT (symbol, timeframe, timestamp) DO NOTHING;
         """
@@ -220,7 +227,7 @@ class DatabaseManager:
                 c['time'], c['hour'], c['day_of_week'], c['month'],
                 c['year'], c['open'], c['high'], c['low'], c['close'],
                 c['volume'], c['direction'], c['candle_size'],
-                c['body_size'], c['wick_upper'], c['wick_lower']
+                c['body_size'], c['wick_upper'], c['wick_lower'], c['session']
             )
             for c in candles
         ]
@@ -292,6 +299,67 @@ class DatabaseManager:
 
         with self.get_cursor() as cursor:
             cursor.execute(query)
+            columns = [desc[0] for desc in cursor.description]
+            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    def migrate_add_session_column(self) -> None:
+        """
+        Safe migration: adds the session column to an existing table if it doesn't exist.
+        Run this once if you already have data collected without the session column.
+        """
+        check_column_sql = """
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'ustech_ohlcv' AND column_name = 'session';
+        """
+
+        with self.get_cursor() as cursor:
+            cursor.execute(check_column_sql)
+            if not cursor.fetchone():
+                # Column doesn't exist, add it
+                alter_sql = """
+                ALTER TABLE ustech_ohlcv
+                ADD COLUMN session TEXT NOT NULL DEFAULT 'unknown';
+                """
+                cursor.execute(alter_sql)
+                logger.info("Migration complete: 'session' column added to ustech_ohlcv")
+            else:
+                logger.info("Migration skipped: 'session' column already exists")
+
+    def get_session_summary(self, timeframe: str = None) -> List[Dict[str, Any]]:
+        """
+        Get candle count breakdown by session.
+        Optionally filtered by timeframe.
+        Useful for verifying session labeling is working correctly.
+        """
+        if timeframe:
+            query = """
+            SELECT
+                session,
+                COUNT(*) as total_candles,
+                ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as pct
+            FROM ustech_ohlcv
+            WHERE timeframe = %s
+            GROUP BY session
+            ORDER BY total_candles DESC;
+            """
+            params = (timeframe,)
+        else:
+            query = """
+            SELECT
+                session,
+                COUNT(*) as total_candles,
+                ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as pct
+            FROM ustech_ohlcv
+            GROUP BY session
+            ORDER BY total_candles DESC;
+            """
+            params = None
+
+        with self.get_cursor() as cursor:
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
             columns = [desc[0] for desc in cursor.description]
             return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
