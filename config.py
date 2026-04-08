@@ -47,6 +47,10 @@ TIMEFRAMES = [
     ("1D", "TIMEFRAME_D1"),
 ]
 
+# Date range to collect data for
+DATA_START_DATE = os.getenv("DATA_START_DATE", "2024-01-01")
+DATA_END_DATE = os.getenv("DATA_END_DATE", "2025-12-31")
+
 # Timeframe order for the view (index for sorting)
 TIMEFRAME_ORDER = {
     "1min": 1,

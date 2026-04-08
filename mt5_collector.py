@@ -11,7 +11,14 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 import time
 
-from config import MT5_CONFIG, SYMBOL, CHUNK_SIZE, TIMEFRAMES
+from config import (
+    MT5_CONFIG,
+    SYMBOL,
+    CHUNK_SIZE,
+    TIMEFRAMES,
+    DATA_START_DATE,
+    DATA_END_DATE
+)
 from database import DatabaseManager
 from logger import get_logger, CollectionLogger, setup_logging
 from validator import DataValidator, BatchValidationResult
@@ -74,6 +81,24 @@ def get_session(timestamp: pd.Timestamp, broker_utc_offset: int = BROKER_UTC_OFF
         return "off_hours"
 
 
+def parse_date(date_str: str, default: datetime) -> datetime:
+    """Parse a date string into a datetime, with a safe fallback."""
+    if isinstance(date_str, datetime):
+        return date_str
+
+    try:
+        parsed = datetime.fromisoformat(date_str)
+        return parsed
+    except Exception:
+        try:
+            return pd.to_datetime(date_str).to_pydatetime()
+        except Exception:
+            logger.warning(
+                f"Invalid date format '{date_str}'. Falling back to {default}"
+            )
+            return default
+
+
 class MT5Collector:
     """Handles MetaTrader 5 connection and data collection"""
 
@@ -118,6 +143,18 @@ class MT5Collector:
         self.initialized = False
         self.collection_logger = CollectionLogger()
 
+        # Data range configured for collection
+        self.data_start_date = parse_date(DATA_START_DATE, datetime(2024, 1, 1))
+        self.data_end_date = parse_date(
+            DATA_END_DATE,
+            datetime(2025, 12, 31, 23, 59, 59)
+        )
+
+        if self.data_end_date.time() == datetime.min.time():
+            self.data_end_date = self.data_end_date.replace(
+                hour=23, minute=59, second=59
+            )
+
         # Initialize validator if enabled
         if self.enable_validation:
             self.validator = DataValidator(
@@ -129,7 +166,8 @@ class MT5Collector:
 
         logger.info(
             f"MT5Collector initialized | symbol={symbol} | "
-            f"broker_utc_offset=GMT+{broker_utc_offset}"
+            f"broker_utc_offset=GMT+{broker_utc_offset} | "
+            f"data_range={self.data_start_date.date()} to {self.data_end_date.date()}"
         )
 
     def initialize(self) -> bool:
@@ -313,12 +351,22 @@ class MT5Collector:
             raise RuntimeError("MT5 not initialized. Call initialize() first.")
 
         if end_date is None:
-            end_date = datetime.now()
+            end_date = self.data_end_date
 
         if start_date is None:
-            start_date = datetime(2000, 1, 1)
+            start_date = self.data_start_date
+        else:
+            start_date = max(start_date, self.data_start_date)
 
-        logger.info(f"Fetching {timeframe_name} from {start_date} to {end_date}")
+        if start_date > end_date:
+            logger.warning(
+                f"Skipping {timeframe_name}: start_date {start_date} is after end_date {end_date}"
+            )
+            return 0, 0, 0
+
+        logger.info(
+            f"Fetching {timeframe_name} from {start_date} to {end_date}"
+        )
         self.collection_logger.log_timeframe_start(timeframe_name)
 
         total_fetched    = 0
@@ -499,6 +547,14 @@ class MT5Collector:
         latest = self.db.get_latest_timestamp(self.symbol, timeframe_name)
 
         if latest:
+            if latest >= self.data_end_date:
+                logger.info(
+                    f"Latest timestamp for {timeframe_name} "
+                    f"({latest}) is beyond configured end date {self.data_end_date}. "
+                    "No incremental fetch needed."
+                )
+                return 0, 0, 0
+
             start_date = latest + timedelta(seconds=1)
             logger.info(f"Incremental fetch for {timeframe_name} from {start_date}")
         else:

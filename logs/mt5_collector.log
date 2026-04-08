@@ -6192,3 +6192,192 @@ AttributeError: 'DatabaseManager' object has no attribute 'get_session_summary'
 2026-04-02 16:26:29 | INFO     | mt5_collector.collection | logger.py:276 | Total duplicates skipped: 2,816
 2026-04-02 16:26:29 | INFO     | mt5_collector.collection | logger.py:277 | Total invalid records: 0
 2026-04-02 16:26:29 | INFO     | mt5_collector.collection | logger.py:284 | ============================================================
+2026-04-08 21:00:56 | INFO     | mt5_collector        | mt5_collector.py:130 | MT5Collector initialized | symbol=USTECm | broker_utc_offset=GMT+2
+2026-04-08 21:00:56 | INFO     | mt5_collector.collection | logger.py:205 | ============================================================
+2026-04-08 21:00:56 | INFO     | mt5_collector.collection | logger.py:206 | COLLECTION STARTED
+2026-04-08 21:00:56 | INFO     | mt5_collector.collection | logger.py:207 | Symbol: USTECm
+2026-04-08 21:00:56 | INFO     | mt5_collector.collection | logger.py:208 | Mode: incremental
+2026-04-08 21:00:56 | INFO     | mt5_collector.collection | logger.py:209 | Time: 2026-04-08 21:00:56.816440
+2026-04-08 21:00:56 | INFO     | mt5_collector.collection | logger.py:210 | ============================================================
+2026-04-08 21:00:56 | INFO     | mt5_collector        | mt5_collector.py:576 | Setting up database schema...
+2026-04-08 21:00:57 | INFO     | mt5_collector        | mt5_collector.py:137 | Initializing MT5 connection...
+2026-04-08 21:01:02 | INFO     | mt5_collector        | mt5_collector.py:154 | Logged in to MT5 account: 295134074
+2026-04-08 21:01:02 | INFO     | mt5_collector        | mt5_collector.py:161 | MT5 Terminal: MetaTrader 5
+2026-04-08 21:01:02 | INFO     | mt5_collector        | mt5_collector.py:162 | MT5 Version: 5660
+2026-04-08 21:01:02 | INFO     | mt5_collector        | mt5_collector.py:165 | Session labeling active | broker offset: GMT+2 | Sessions: asian(00-07 UTC), london(07-12 UTC), london_ny_overlap(12-16 UTC), new_york(16-21 UTC), off_hours(21-00 UTC)
+2026-04-08 21:01:02 | INFO     | mt5_collector        | mt5_collector.py:198 | Symbol 'USTECm' is available
+2026-04-08 21:01:02 | DEBUG    | mt5_collector        | mt5_collector.py:199 | Symbol digits: 2, spread: 216
+2026-04-08 21:01:02 | INFO     | mt5_collector        | mt5_collector.py:589 | Starting data collection...
+2026-04-08 21:01:02 | INFO     | mt5_collector        | mt5_collector.py:503 | Incremental fetch for 1min from 2026-04-02 14:26:01
+2026-04-08 21:01:02 | INFO     | mt5_collector        | mt5_collector.py:321 | Fetching 1min from 2026-04-02 14:26:01 to 2026-04-08 21:01:02.434058
+2026-04-08 21:01:02 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 1min
+2026-04-08 21:01:15 | DEBUG    | mt5_collector        | mt5_collector.py:287 | 1min: 63 candles with warnings
+2026-04-08 21:01:15 | DEBUG    | mt5_collector.collection | logger.py:230 |   1min: Chunk processed - Fetched: 5450, Inserted: 50, Invalid: 0, Earliest: 2026-04-02 12:27:00
+2026-04-08 21:01:15 | INFO     | mt5_collector        | mt5_collector.py:392 |   1min: Fetched 5450, inserted 50, invalid 0 (up to 2026-04-02 12:27:00)
+2026-04-08 21:01:15 | INFO     | mt5_collector        | mt5_collector.py:482 |   1min session breakdown: asian=1,680, london=1,248, london_ny_overlap=960, new_york=842, off_hours=720
+2026-04-08 21:01:15 | INFO     | mt5_collector.collection | logger.py:244 | Completed 1min: Fetched 5,450, Inserted 50 new records
+2026-04-08 21:01:16 | INFO     | mt5_collector        | mt5_collector.py:503 | Incremental fetch for 2min from 2026-04-02 14:26:01
+2026-04-08 21:01:16 | INFO     | mt5_collector        | mt5_collector.py:321 | Fetching 2min from 2026-04-02 14:26:01 to 2026-04-08 21:01:16.036803
+2026-04-08 21:01:16 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 2min
+2026-04-08 21:01:22 | DEBUG    | mt5_collector        | mt5_collector.py:287 | 2min: 100 candles with warnings
+2026-04-08 21:01:23 | DEBUG    | mt5_collector.collection | logger.py:230 |   2min: Chunk processed - Fetched: 2725, Inserted: 25, Invalid: 0, Earliest: 2026-04-02 12:28:00
+2026-04-08 21:01:23 | INFO     | mt5_collector        | mt5_collector.py:392 |   2min: Fetched 2725, inserted 25, invalid 0 (up to 2026-04-02 12:28:00)
+2026-04-08 21:01:23 | INFO     | mt5_collector        | mt5_collector.py:482 |   2min session breakdown: asian=840, london=624, london_ny_overlap=480, new_york=421, off_hours=360
+2026-04-08 21:01:23 | INFO     | mt5_collector.collection | logger.py:244 | Completed 2min: Fetched 2,725, Inserted 25 new records
+2026-04-08 21:01:23 | INFO     | mt5_collector        | mt5_collector.py:503 | Incremental fetch for 3min from 2026-04-02 14:24:01
+2026-04-08 21:01:23 | INFO     | mt5_collector        | mt5_collector.py:321 | Fetching 3min from 2026-04-02 14:24:01 to 2026-04-08 21:01:23.251687
+2026-04-08 21:01:23 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 3min
+2026-04-08 21:01:27 | DEBUG    | mt5_collector        | mt5_collector.py:287 | 3min: 47 candles with warnings
+2026-04-08 21:01:28 | DEBUG    | mt5_collector.collection | logger.py:230 |   3min: Chunk processed - Fetched: 1817, Inserted: 17, Invalid: 0, Earliest: 2026-04-02 12:27:00
+2026-04-08 21:01:28 | INFO     | mt5_collector        | mt5_collector.py:392 |   3min: Fetched 1817, inserted 17, invalid 0 (up to 2026-04-02 12:27:00)
+2026-04-08 21:01:28 | INFO     | mt5_collector        | mt5_collector.py:482 |   3min session breakdown: asian=560, london=416, london_ny_overlap=320, new_york=281, off_hours=240
+2026-04-08 21:01:28 | INFO     | mt5_collector.collection | logger.py:244 | Completed 3min: Fetched 1,817, Inserted 17 new records
+2026-04-08 21:01:28 | INFO     | mt5_collector        | mt5_collector.py:503 | Incremental fetch for 4min from 2026-04-02 14:24:01
+2026-04-08 21:01:28 | INFO     | mt5_collector        | mt5_collector.py:321 | Fetching 4min from 2026-04-02 14:24:01 to 2026-04-08 21:01:28.135600
+2026-04-08 21:01:28 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 4min
+2026-04-08 21:01:31 | DEBUG    | mt5_collector        | mt5_collector.py:287 | 4min: 42 candles with warnings
+2026-04-08 21:01:31 | DEBUG    | mt5_collector.collection | logger.py:230 |   4min: Chunk processed - Fetched: 1363, Inserted: 63, Invalid: 0, Earliest: 2026-04-02 12:28:00
+2026-04-08 21:01:31 | INFO     | mt5_collector        | mt5_collector.py:392 |   4min: Fetched 1363, inserted 63, invalid 0 (up to 2026-04-02 12:28:00)
+2026-04-08 21:01:31 | INFO     | mt5_collector        | mt5_collector.py:482 |   4min session breakdown: asian=420, london=312, london_ny_overlap=240, new_york=211, off_hours=180
+2026-04-08 21:01:31 | INFO     | mt5_collector.collection | logger.py:244 | Completed 4min: Fetched 1,363, Inserted 63 new records
+2026-04-08 21:01:31 | INFO     | mt5_collector        | mt5_collector.py:503 | Incremental fetch for 5min from 2026-04-02 14:25:01
+2026-04-08 21:01:31 | INFO     | mt5_collector        | mt5_collector.py:321 | Fetching 5min from 2026-04-02 14:25:01 to 2026-04-08 21:01:31.828635
+2026-04-08 21:01:31 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 5min
+2026-04-08 21:01:34 | DEBUG    | mt5_collector        | mt5_collector.py:287 | 5min: 12 candles with warnings
+2026-04-08 21:01:34 | DEBUG    | mt5_collector.collection | logger.py:230 |   5min: Chunk processed - Fetched: 1090, Inserted: 90, Invalid: 0, Earliest: 2026-04-02 12:30:00
+2026-04-08 21:01:34 | INFO     | mt5_collector        | mt5_collector.py:392 |   5min: Fetched 1090, inserted 90, invalid 0 (up to 2026-04-02 12:30:00)
+2026-04-08 21:01:34 | INFO     | mt5_collector        | mt5_collector.py:482 |   5min session breakdown: asian=336, london=249, london_ny_overlap=192, new_york=169, off_hours=144
+2026-04-08 21:01:34 | INFO     | mt5_collector.collection | logger.py:244 | Completed 5min: Fetched 1,090, Inserted 90 new records
+2026-04-08 21:01:34 | INFO     | mt5_collector        | mt5_collector.py:503 | Incremental fetch for 10min from 2026-04-02 14:20:01
+2026-04-08 21:01:34 | INFO     | mt5_collector        | mt5_collector.py:321 | Fetching 10min from 2026-04-02 14:20:01 to 2026-04-08 21:01:34.895256
+2026-04-08 21:01:34 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 10min
+2026-04-08 21:01:36 | DEBUG    | mt5_collector        | mt5_collector.py:287 | 10min: 16 candles with warnings
+2026-04-08 21:01:36 | DEBUG    | mt5_collector.collection | logger.py:230 |   10min: Chunk processed - Fetched: 546, Inserted: 46, Invalid: 0, Earliest: 2026-04-02 12:30:00
+2026-04-08 21:01:36 | INFO     | mt5_collector        | mt5_collector.py:392 |   10min: Fetched 546, inserted 46, invalid 0 (up to 2026-04-02 12:30:00)
+2026-04-08 21:01:36 | INFO     | mt5_collector        | mt5_collector.py:482 |   10min session breakdown: asian=168, london=125, london_ny_overlap=96, new_york=85, off_hours=72
+2026-04-08 21:01:36 | INFO     | mt5_collector.collection | logger.py:244 | Completed 10min: Fetched 546, Inserted 46 new records
+2026-04-08 21:01:36 | INFO     | mt5_collector        | mt5_collector.py:503 | Incremental fetch for 15min from 2026-04-02 14:15:01
+2026-04-08 21:01:36 | INFO     | mt5_collector        | mt5_collector.py:321 | Fetching 15min from 2026-04-02 14:15:01 to 2026-04-08 21:01:36.455396
+2026-04-08 21:01:36 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 15min
+2026-04-08 21:01:37 | DEBUG    | mt5_collector        | mt5_collector.py:287 | 15min: 9 candles with warnings
+2026-04-08 21:01:37 | DEBUG    | mt5_collector.collection | logger.py:230 |   15min: Chunk processed - Fetched: 364, Inserted: 64, Invalid: 0, Earliest: 2026-04-02 12:30:00
+2026-04-08 21:01:37 | INFO     | mt5_collector        | mt5_collector.py:392 |   15min: Fetched 364, inserted 64, invalid 0 (up to 2026-04-02 12:30:00)
+2026-04-08 21:01:37 | INFO     | mt5_collector        | mt5_collector.py:482 |   15min session breakdown: asian=112, london=83, london_ny_overlap=64, new_york=57, off_hours=48
+2026-04-08 21:01:37 | INFO     | mt5_collector.collection | logger.py:244 | Completed 15min: Fetched 364, Inserted 64 new records
+2026-04-08 21:01:37 | INFO     | mt5_collector        | mt5_collector.py:503 | Incremental fetch for 30min from 2026-04-02 14:00:01
+2026-04-08 21:01:37 | INFO     | mt5_collector        | mt5_collector.py:321 | Fetching 30min from 2026-04-02 14:00:01 to 2026-04-08 21:01:37.523141
+2026-04-08 21:01:37 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 30min
+2026-04-08 21:01:38 | DEBUG    | mt5_collector        | mt5_collector.py:287 | 30min: 9 candles with warnings
+2026-04-08 21:01:38 | DEBUG    | mt5_collector.collection | logger.py:230 |   30min: Chunk processed - Fetched: 183, Inserted: 83, Invalid: 0, Earliest: 2026-04-02 12:30:00
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:392 |   30min: Fetched 183, inserted 83, invalid 0 (up to 2026-04-02 12:30:00)
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:482 |   30min session breakdown: asian=56, london=42, london_ny_overlap=32, new_york=29, off_hours=24
+2026-04-08 21:01:38 | INFO     | mt5_collector.collection | logger.py:244 | Completed 30min: Fetched 183, Inserted 83 new records
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:503 | Incremental fetch for 1H from 2026-04-02 14:00:01
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:321 | Fetching 1H from 2026-04-02 14:00:01 to 2026-04-08 21:01:38.140588
+2026-04-08 21:01:38 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 1H
+2026-04-08 21:01:38 | DEBUG    | mt5_collector        | mt5_collector.py:287 | 1H: 9 candles with warnings
+2026-04-08 21:01:38 | DEBUG    | mt5_collector.collection | logger.py:230 |   1H: Chunk processed - Fetched: 92, Inserted: 90, Invalid: 0, Earliest: 2026-04-02 13:00:00
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:392 |   1H: Fetched 92, inserted 90, invalid 0 (up to 2026-04-02 13:00:00)
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:482 |   1H session breakdown: asian=28, london=21, london_ny_overlap=16, new_york=15, off_hours=12
+2026-04-08 21:01:38 | INFO     | mt5_collector.collection | logger.py:244 | Completed 1H: Fetched 92, Inserted 90 new records
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:503 | Incremental fetch for 4H from 2026-04-02 12:00:01
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:321 | Fetching 4H from 2026-04-02 12:00:01 to 2026-04-08 21:01:38.481250
+2026-04-08 21:01:38 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 4H
+2026-04-08 21:01:38 | DEBUG    | mt5_collector        | mt5_collector.py:287 | 4H: 8 candles with warnings
+2026-04-08 21:01:38 | DEBUG    | mt5_collector.collection | logger.py:230 |   4H: Chunk processed - Fetched: 25, Inserted: 24, Invalid: 0, Earliest: 2026-04-02 12:00:00
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:464 |   4H: Fetched 25, inserted 24, invalid 0 (up to 2026-04-02 12:00:00)
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:482 |   4H session breakdown: asian=8, london=5, london_ny_overlap=4, new_york=4, off_hours=4
+2026-04-08 21:01:38 | INFO     | mt5_collector.collection | logger.py:244 | Completed 4H: Fetched 25, Inserted 24 new records
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:503 | Incremental fetch for 1D from 2026-04-02 00:00:01
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:321 | Fetching 1D from 2026-04-02 00:00:01 to 2026-04-08 21:01:38.643823
+2026-04-08 21:01:38 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 1D
+2026-04-08 21:01:38 | DEBUG    | mt5_collector        | mt5_collector.py:287 | 1D: 4 candles with warnings
+2026-04-08 21:01:38 | DEBUG    | mt5_collector.collection | logger.py:230 |   1D: Chunk processed - Fetched: 6, Inserted: 5, Invalid: 0, Earliest: 2026-04-02 00:00:00
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:464 |   1D: Fetched 6, inserted 5, invalid 0 (up to 2026-04-02 00:00:00)
+2026-04-08 21:01:38 | INFO     | mt5_collector        | mt5_collector.py:482 |   1D session breakdown: daily=6
+2026-04-08 21:01:38 | INFO     | mt5_collector.collection | logger.py:244 | Completed 1D: Fetched 6, Inserted 5 new records
+2026-04-08 21:01:39 | INFO     | mt5_collector        | mt5_collector.py:177 | MT5 connection closed
+2026-04-08 21:01:39 | INFO     | mt5_collector.collection | logger.py:270 | ============================================================
+2026-04-08 21:01:39 | INFO     | mt5_collector.collection | logger.py:271 | COLLECTION COMPLETED
+2026-04-08 21:01:39 | INFO     | mt5_collector.collection | logger.py:272 | Duration: 0:00:42.326249
+2026-04-08 21:01:39 | INFO     | mt5_collector.collection | logger.py:273 | Timeframes processed: 11
+2026-04-08 21:01:39 | INFO     | mt5_collector.collection | logger.py:274 | Total fetched: 13,661
+2026-04-08 21:01:39 | INFO     | mt5_collector.collection | logger.py:275 | Total inserted: 557
+2026-04-08 21:01:39 | INFO     | mt5_collector.collection | logger.py:276 | Total duplicates skipped: 13,104
+2026-04-08 21:01:39 | INFO     | mt5_collector.collection | logger.py:277 | Total invalid records: 0
+2026-04-08 21:01:39 | INFO     | mt5_collector.collection | logger.py:284 | ============================================================
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:167 | MT5Collector initialized | symbol=USTECm | broker_utc_offset=GMT+2 | data_range=2024-01-01 to 2025-12-31
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:205 | ============================================================
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:206 | COLLECTION STARTED
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:207 | Symbol: USTECm
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:208 | Mode: incremental
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:209 | Time: 2026-04-08 21:05:16.500821
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:210 | ============================================================
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:618 | Setting up database schema...
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:175 | Initializing MT5 connection...
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:192 | Logged in to MT5 account: 295134074
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:199 | MT5 Terminal: MetaTrader 5
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:200 | MT5 Version: 5660
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:203 | Session labeling active | broker offset: GMT+2 | Sessions: asian(00-07 UTC), london(07-12 UTC), london_ny_overlap(12-16 UTC), new_york(16-21 UTC), off_hours(21-00 UTC)
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:236 | Symbol 'USTECm' is available
+2026-04-08 21:05:16 | DEBUG    | mt5_collector        | mt5_collector.py:237 | Symbol digits: 2, spread: 192
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:631 | Starting data collection...
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:545 | Incremental fetch for 1min from 2026-04-08 19:01:01
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:361 | Fetching 1min from 2026-04-08 19:01:01 to 2025-12-31 23:59:59
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 1min
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:244 | Completed 1min: Fetched 0, Inserted 0 new records
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:545 | Incremental fetch for 2min from 2026-04-08 19:00:01
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:361 | Fetching 2min from 2026-04-08 19:00:01 to 2025-12-31 23:59:59
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 2min
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:244 | Completed 2min: Fetched 0, Inserted 0 new records
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:545 | Incremental fetch for 3min from 2026-04-08 19:00:01
+2026-04-08 21:05:16 | INFO     | mt5_collector        | mt5_collector.py:361 | Fetching 3min from 2026-04-08 19:00:01 to 2025-12-31 23:59:59
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 3min
+2026-04-08 21:05:16 | INFO     | mt5_collector.collection | logger.py:244 | Completed 3min: Fetched 0, Inserted 0 new records
+2026-04-08 21:05:17 | INFO     | mt5_collector        | mt5_collector.py:215 | MT5 connection closed
+2026-04-08 21:05:17 | INFO     | mt5_collector.collection | logger.py:270 | ============================================================
+2026-04-08 21:05:17 | INFO     | mt5_collector.collection | logger.py:271 | COLLECTION FAILED
+2026-04-08 21:05:17 | INFO     | mt5_collector.collection | logger.py:272 | Duration: 0:00:00.505989
+2026-04-08 21:05:17 | INFO     | mt5_collector.collection | logger.py:273 | Timeframes processed: 3
+2026-04-08 21:05:17 | INFO     | mt5_collector.collection | logger.py:274 | Total fetched: 0
+2026-04-08 21:05:17 | INFO     | mt5_collector.collection | logger.py:275 | Total inserted: 0
+2026-04-08 21:05:17 | INFO     | mt5_collector.collection | logger.py:276 | Total duplicates skipped: 0
+2026-04-08 21:05:17 | INFO     | mt5_collector.collection | logger.py:277 | Total invalid records: 0
+2026-04-08 21:05:17 | INFO     | mt5_collector.collection | logger.py:284 | ============================================================
+2026-04-08 21:08:55 | INFO     | mt5_collector        | mt5_collector.py:167 | MT5Collector initialized | symbol=USTECm | broker_utc_offset=GMT+2 | data_range=2024-01-01 to 2025-12-31
+2026-04-08 21:08:55 | INFO     | mt5_collector.collection | logger.py:205 | ============================================================
+2026-04-08 21:08:55 | INFO     | mt5_collector.collection | logger.py:206 | COLLECTION STARTED
+2026-04-08 21:08:55 | INFO     | mt5_collector.collection | logger.py:207 | Symbol: USTECm
+2026-04-08 21:08:55 | INFO     | mt5_collector.collection | logger.py:208 | Mode: incremental
+2026-04-08 21:08:55 | INFO     | mt5_collector.collection | logger.py:209 | Time: 2026-04-08 21:08:55.612474
+2026-04-08 21:08:55 | INFO     | mt5_collector.collection | logger.py:210 | ============================================================
+2026-04-08 21:08:55 | INFO     | mt5_collector        | mt5_collector.py:632 | Setting up database schema...
+2026-04-08 21:08:55 | INFO     | mt5_collector        | mt5_collector.py:175 | Initializing MT5 connection...
+2026-04-08 21:08:55 | INFO     | mt5_collector        | mt5_collector.py:192 | Logged in to MT5 account: 295134074
+2026-04-08 21:08:55 | INFO     | mt5_collector        | mt5_collector.py:199 | MT5 Terminal: MetaTrader 5
+2026-04-08 21:08:55 | INFO     | mt5_collector        | mt5_collector.py:200 | MT5 Version: 5660
+2026-04-08 21:08:55 | INFO     | mt5_collector        | mt5_collector.py:203 | Session labeling active | broker offset: GMT+2 | Sessions: asian(00-07 UTC), london(07-12 UTC), london_ny_overlap(12-16 UTC), new_york(16-21 UTC), off_hours(21-00 UTC)
+2026-04-08 21:08:55 | INFO     | mt5_collector        | mt5_collector.py:236 | Symbol 'USTECm' is available
+2026-04-08 21:08:55 | DEBUG    | mt5_collector        | mt5_collector.py:237 | Symbol digits: 2, spread: 192
+2026-04-08 21:08:55 | INFO     | mt5_collector        | mt5_collector.py:645 | Starting data collection...
+2026-04-08 21:08:55 | INFO     | mt5_collector        | mt5_collector.py:551 | Latest timestamp for 1min (2026-04-08 19:01:00) is beyond configured end date 2025-12-31 23:59:59. No incremental fetch needed.
+2026-04-08 21:08:55 | INFO     | mt5_collector        | mt5_collector.py:551 | Latest timestamp for 2min (2026-04-08 19:00:00) is beyond configured end date 2025-12-31 23:59:59. No incremental fetch needed.
+2026-04-08 21:08:56 | INFO     | mt5_collector        | mt5_collector.py:551 | Latest timestamp for 3min (2026-04-08 19:00:00) is beyond configured end date 2025-12-31 23:59:59. No incremental fetch needed.
+2026-04-08 21:08:56 | INFO     | mt5_collector        | mt5_collector.py:551 | Latest timestamp for 4min (2026-04-08 19:00:00) is beyond configured end date 2025-12-31 23:59:59. No incremental fetch needed.
+2026-04-08 21:08:56 | INFO     | mt5_collector        | mt5_collector.py:551 | Latest timestamp for 5min (2026-04-08 19:00:00) is beyond configured end date 2025-12-31 23:59:59. No incremental fetch needed.
+2026-04-08 21:08:56 | INFO     | mt5_collector        | mt5_collector.py:551 | Latest timestamp for 10min (2026-04-08 19:00:00) is beyond configured end date 2025-12-31 23:59:59. No incremental fetch needed.
+2026-04-08 21:08:56 | INFO     | mt5_collector        | mt5_collector.py:551 | Latest timestamp for 15min (2026-04-08 19:00:00) is beyond configured end date 2025-12-31 23:59:59. No incremental fetch needed.
+2026-04-08 21:08:56 | INFO     | mt5_collector        | mt5_collector.py:551 | Latest timestamp for 30min (2026-04-08 19:00:00) is beyond configured end date 2025-12-31 23:59:59. No incremental fetch needed.
+2026-04-08 21:08:56 | INFO     | mt5_collector        | mt5_collector.py:551 | Latest timestamp for 1H (2026-04-08 19:00:00) is beyond configured end date 2025-12-31 23:59:59. No incremental fetch needed.
+2026-04-08 21:08:56 | INFO     | mt5_collector        | mt5_collector.py:551 | Latest timestamp for 4H (2026-04-08 16:00:00) is beyond configured end date 2025-12-31 23:59:59. No incremental fetch needed.
+2026-04-08 21:08:56 | INFO     | mt5_collector        | mt5_collector.py:551 | Latest timestamp for 1D (2026-04-08 00:00:00) is beyond configured end date 2025-12-31 23:59:59. No incremental fetch needed.
+2026-04-08 21:08:56 | INFO     | mt5_collector        | mt5_collector.py:215 | MT5 connection closed
+2026-04-08 21:08:56 | INFO     | mt5_collector.collection | logger.py:270 | ============================================================
+2026-04-08 21:08:56 | INFO     | mt5_collector.collection | logger.py:271 | COLLECTION COMPLETED
+2026-04-08 21:08:56 | INFO     | mt5_collector.collection | logger.py:272 | Duration: 0:00:01.272958
+2026-04-08 21:08:56 | INFO     | mt5_collector.collection | logger.py:273 | Timeframes processed: 0
+2026-04-08 21:08:56 | INFO     | mt5_collector.collection | logger.py:274 | Total fetched: 0
+2026-04-08 21:08:56 | INFO     | mt5_collector.collection | logger.py:275 | Total inserted: 0
+2026-04-08 21:08:56 | INFO     | mt5_collector.collection | logger.py:276 | Total duplicates skipped: 0
+2026-04-08 21:08:56 | INFO     | mt5_collector.collection | logger.py:277 | Total invalid records: 0
+2026-04-08 21:08:56 | INFO     | mt5_collector.collection | logger.py:284 | ============================================================
