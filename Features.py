@@ -76,6 +76,8 @@ def detect_zones(
     atr = _atr(df, atr_period)
 
     # Initialize zone columns
+    # Initialize ALL zone columns as float (np.nan) to avoid dtype conflicts
+    # when writing float prices (e.g. 21204.08) into columns pandas inferred as int
     for col in [
         "demand_zone_top", "demand_zone_bottom", "demand_zone_strength",
         "demand_zone_fresh", "demand_zone_touches",
@@ -85,7 +87,7 @@ def detect_zones(
         "in_demand_zone", "in_supply_zone",
         "between_zones",
     ]:
-        df[col] = np.nan if "dist" in col or "strength" in col else 0
+        df[col] = np.nan
 
     # Rolling zone state
     active_demand = None  # (top, bottom, strength, touches, bar_index)
@@ -414,22 +416,25 @@ def build_features(
     h1_df: pd.DataFrame = None,
     h4_df: pd.DataFrame = None,
     zone_lookback: int = 50,
+    impulse_atr_multiplier: float = 1.0,
 ) -> pd.DataFrame:
     """
     Full feature pipeline for one timeframe.
 
     Args:
-        df:            Raw OHLCV DataFrame for the target timeframe
-        h1_df:         1H OHLCV DataFrame for HTF bias
-        h4_df:         4H OHLCV DataFrame for HTF bias
-        zone_lookback: Bars to look back when detecting zones
+        df:                      Raw OHLCV DataFrame for the target timeframe
+        h1_df:                   1H OHLCV DataFrame for HTF bias
+        h4_df:                   4H OHLCV DataFrame for HTF bias
+        zone_lookback:           Bars to look back when detecting zones
+        impulse_atr_multiplier:  How strong a candle must be (x ATR) to create a zone.
+                                 Lower = more zones detected. Default 1.0.
 
     Returns:
         DataFrame with all features added, NaN rows from warmup dropped.
     """
     logger.info(f"Building features for {len(df)} rows...")
 
-    df = detect_zones(df, lookback=zone_lookback)
+    df = detect_zones(df, lookback=zone_lookback, impulse_atr_multiplier=impulse_atr_multiplier)
     df = add_confirmation_signals(df)
     df = add_indicators(df)
 
