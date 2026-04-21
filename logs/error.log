@@ -12,3 +12,15 @@ Traceback (most recent call last):
     results['session_summary'] = self.db.get_session_summary()
                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AttributeError: 'DatabaseManager' object has no attribute 'get_session_summary'
+2026-04-21 19:15:02 | ERROR    | mt5_collector        | mt5_collector.py:533 | Collection error: cannot change name of view column "direction" to "spread"
+HINT:  Use ALTER VIEW ... RENAME COLUMN ... to change name of view column instead.
+Traceback (most recent call last):
+  File "F:\MT5-Collector\mt5_collector.py", line 508, in run
+    self.db.setup_schema()
+  File "F:\MT5-Collector\database.py", line 198, in setup_schema
+    self.create_view()
+  File "F:\MT5-Collector\database.py", line 163, in create_view
+    cursor.execute(create_view_sql)
+psycopg2.errors.InvalidTableDefinition: cannot change name of view column "direction" to "spread"
+HINT:  Use ALTER VIEW ... RENAME COLUMN ... to change name of view column instead.
+

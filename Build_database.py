@@ -27,7 +27,7 @@ def main():
     try:
         from ml_dataset import build_ml_dataset, export_train_test_split, print_dataset_summary
 
-        timeframes = ["5min", "15min", "1H"]
+        timeframes = ["5min", "15min", "1H", "4H"]
 
         # Per-timeframe parameters tuned for Zone-to-Zone strategy:
         #
@@ -41,9 +41,10 @@ def main():
         #
         # min_rr: minimum risk/reward ratio to count as a valid signal.
         TF_PARAMS = {
-            "5min":  {"max_label_bars": 60,  "min_rr": 1.2, "zone_impulse_atr": 1.0},
-            "15min": {"max_label_bars": 80,  "min_rr": 1.3, "zone_impulse_atr": 1.0},
-            "1H":    {"max_label_bars": 120, "min_rr": 1.2, "zone_impulse_atr": 0.8},
+            "5min":  {"max_label_bars": 60,  "min_rr": 1.0, "zone_impulse_atr": 0.5},
+            "15min": {"max_label_bars": 80,  "min_rr": 1.0, "zone_impulse_atr": 0.5},
+            "1H":    {"max_label_bars": 120, "min_rr": 1.0, "zone_impulse_atr": 0.3},
+            "4H":    {"max_label_bars": 60,  "min_rr": 1.0, "zone_impulse_atr": 0.3},
         }
 
         os.makedirs("./datasets", exist_ok=True)
@@ -64,7 +65,7 @@ def main():
                 max_label_bars=params["max_label_bars"],
                 min_rr=params["min_rr"],
                 zone_impulse_atr=params["zone_impulse_atr"],
-                require_confirmation=True,
+                require_confirmation=False,
                 use_midline_tp=True,
             )
 

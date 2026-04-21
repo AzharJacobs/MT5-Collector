@@ -1,11 +1,11 @@
 """
 features.py — Zone-to-Zone Feature Engineering
-===============================================
-Builds ML-ready features from raw OHLCV data.
 
-Zone detection is intentionally lenient here — the goal is to detect
-as many valid zones as possible and let the ML model learn which ones
-are high-probability. Filtering happens via feature scores, not hard gates.
+Key fix:
+  detect_zones() now tracks a LIST of active demand and supply zones,
+  not a single variable. This means when price is in a demand zone,
+  the nearest supply zone above is always available for TP calculation.
+  Zones are invalidated when price closes through them (broken zone).
 """
 
 import pandas as pd
@@ -13,6 +13,11 @@ import numpy as np
 import logging
 
 logger = logging.getLogger("mt5_collector.features")
+
+DAY_OF_WEEK_MAP = {
+    "Monday": 0, "Tuesday": 1, "Wednesday": 2,
+    "Thursday": 3, "Friday": 4, "Saturday": 5, "Sunday": 6,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -40,7 +45,7 @@ def _rsi(series: pd.Series, period: int = 14) -> pd.Series:
 
 
 # ---------------------------------------------------------------------------
-# Zone Detection
+# Multi-Zone Tracker
 # ---------------------------------------------------------------------------
 
 def detect_zones(
@@ -48,19 +53,23 @@ def detect_zones(
     lookback: int = 30,
     impulse_atr_multiplier: float = 0.5,
     atr_period: int = 14,
+    max_zones: int = 5,
 ) -> pd.DataFrame:
     """
-    Detect supply and demand zones.
+    Detect supply and demand zones using a zone LIST (not single variable).
 
-    Deliberately lenient (0.5x ATR default) so the model sees many zone
-    encounters and learns which are high-probability from the feature set.
-    Freshness, touch count, and strength score give the model enough signal
-    to discriminate good zones from weak ones.
+    For each bar:
+      - Checks if any existing zones are broken (price closed through) → remove
+      - Detects new zones from impulse candles
+      - Finds the nearest demand zone BELOW price → demand context
+      - Finds the nearest supply zone ABOVE price → supply context
+      - Both are written to the row simultaneously
+
+    This means TP is always calculable when price is in a zone.
     """
     df   = df.copy().reset_index(drop=True)
     atr  = _atr(df, atr_period)
 
-    # Initialize all zone columns as float from the start (avoids dtype errors)
     zone_cols = [
         "demand_zone_top", "demand_zone_bottom", "demand_zone_strength",
         "demand_zone_fresh", "demand_zone_touches",
@@ -72,76 +81,123 @@ def detect_zones(
     for col in zone_cols:
         df[col] = np.nan
 
-    active_demand = None
-    active_supply = None
+    # Zone list entries: dict with top, bottom, strength, touches, fresh, type
+    demand_zones = []  # list of active demand zones
+    supply_zones = []  # list of active supply zones
 
     for i in range(lookback, len(df)):
         cur     = df.iloc[i]
+        close   = float(cur["close"])
+        high    = float(cur["high"])
+        low     = float(cur["low"])
         cur_atr = float(atr.iloc[i]) if not np.isnan(atr.iloc[i]) else 1.0
         body    = float(abs(cur["close"] - cur["open"]))
 
-        # --- Demand zone: bullish impulse ---
+        # ----------------------------------------------------------------
+        # Invalidate broken zones — price closed through them
+        # ----------------------------------------------------------------
+        demand_zones = [z for z in demand_zones if close > z["bottom"]]  # keep if price above bottom
+        supply_zones = [z for z in supply_zones if close < z["top"]]     # keep if price below top
+
+        # ----------------------------------------------------------------
+        # Detect new demand zone (bullish impulse)
+        # ----------------------------------------------------------------
         if cur["close"] > cur["open"] and body > impulse_atr_multiplier * cur_atr:
-            strength = float(min(body / cur_atr, 5.0))
-            active_demand = {
-                "top":     float(max(cur["open"], cur["close"])),
-                "bottom":  float(cur["low"]),
-                "strength": strength,
-                "touches": 0,
-                "fresh":   True,
+            new_zone = {
+                "top":      float(max(cur["open"], cur["close"])),
+                "bottom":   float(cur["low"]),
+                "strength": float(min(body / cur_atr, 5.0)),
+                "touches":  0,
+                "fresh":    True,
             }
+            demand_zones.append(new_zone)
+            # Keep only the strongest max_zones zones
+            if len(demand_zones) > max_zones:
+                demand_zones = sorted(demand_zones, key=lambda z: z["strength"], reverse=True)[:max_zones]
 
-        # --- Supply zone: bearish impulse ---
+        # ----------------------------------------------------------------
+        # Detect new supply zone (bearish impulse)
+        # ----------------------------------------------------------------
         if cur["close"] < cur["open"] and body > impulse_atr_multiplier * cur_atr:
-            strength = float(min(body / cur_atr, 5.0))
-            active_supply = {
-                "top":     float(cur["high"]),
-                "bottom":  float(min(cur["open"], cur["close"])),
-                "strength": strength,
-                "touches": 0,
-                "fresh":   True,
+            new_zone = {
+                "top":      float(cur["high"]),
+                "bottom":   float(min(cur["open"], cur["close"])),
+                "strength": float(min(body / cur_atr, 5.0)),
+                "touches":  0,
+                "fresh":    True,
             }
+            supply_zones.append(new_zone)
+            if len(supply_zones) > max_zones:
+                supply_zones = sorted(supply_zones, key=lambda z: z["strength"], reverse=True)[:max_zones]
 
-        # --- Write demand zone to row ---
-        if active_demand is not None:
-            df.at[i, "demand_zone_top"]      = active_demand["top"]
-            df.at[i, "demand_zone_bottom"]   = active_demand["bottom"]
-            df.at[i, "demand_zone_strength"] = active_demand["strength"]
-            df.at[i, "demand_zone_fresh"]    = float(active_demand["fresh"])
-            df.at[i, "demand_zone_touches"]  = float(active_demand["touches"])
+        # ----------------------------------------------------------------
+        # Find nearest demand zone (highest bottom below close)
+        # ----------------------------------------------------------------
+        demand_below = [z for z in demand_zones if z["top"] <= close]
+        nearest_demand = None
+        if demand_below:
+            nearest_demand = max(demand_below, key=lambda z: z["top"])  # closest below
 
-            dist = (float(cur["close"]) - active_demand["top"]) / cur_atr
+        # ----------------------------------------------------------------
+        # Find nearest supply zone (lowest top above close)
+        # ----------------------------------------------------------------
+        supply_above = [z for z in supply_zones if z["bottom"] >= close]
+        nearest_supply = None
+        if supply_above:
+            nearest_supply = min(supply_above, key=lambda z: z["bottom"])  # closest above
+
+        # ----------------------------------------------------------------
+        # Write demand zone to row
+        # ----------------------------------------------------------------
+        in_demand = False
+        if nearest_demand is not None:
+            df.at[i, "demand_zone_top"]      = nearest_demand["top"]
+            df.at[i, "demand_zone_bottom"]   = nearest_demand["bottom"]
+            df.at[i, "demand_zone_strength"] = nearest_demand["strength"]
+            df.at[i, "demand_zone_fresh"]    = float(nearest_demand["fresh"])
+            df.at[i, "demand_zone_touches"]  = float(nearest_demand["touches"])
+            dist = (close - nearest_demand["top"]) / cur_atr
             df.at[i, "nearest_demand_dist_atr"] = float(dist)
 
-            in_d = active_demand["bottom"] <= float(cur["low"]) <= active_demand["top"]
-            df.at[i, "in_demand_zone"] = float(in_d)
-            if in_d:
-                active_demand["touches"] += 1
-                active_demand["fresh"]    = False
+            # In demand zone if price low is within the zone
+            in_demand = nearest_demand["bottom"] <= low <= nearest_demand["top"]
+            df.at[i, "in_demand_zone"] = float(in_demand)
+            if in_demand:
+                nearest_demand["touches"] += 1
+                nearest_demand["fresh"]    = False
+        else:
+            df.at[i, "in_demand_zone"] = 0.0
 
-        # --- Write supply zone to row ---
-        if active_supply is not None:
-            df.at[i, "supply_zone_top"]      = active_supply["top"]
-            df.at[i, "supply_zone_bottom"]   = active_supply["bottom"]
-            df.at[i, "supply_zone_strength"] = active_supply["strength"]
-            df.at[i, "supply_zone_fresh"]    = float(active_supply["fresh"])
-            df.at[i, "supply_zone_touches"]  = float(active_supply["touches"])
-
-            dist = (active_supply["bottom"] - float(cur["close"])) / cur_atr
+        # ----------------------------------------------------------------
+        # Write supply zone to row
+        # ----------------------------------------------------------------
+        in_supply = False
+        if nearest_supply is not None:
+            df.at[i, "supply_zone_top"]      = nearest_supply["top"]
+            df.at[i, "supply_zone_bottom"]   = nearest_supply["bottom"]
+            df.at[i, "supply_zone_strength"] = nearest_supply["strength"]
+            df.at[i, "supply_zone_fresh"]    = float(nearest_supply["fresh"])
+            df.at[i, "supply_zone_touches"]  = float(nearest_supply["touches"])
+            dist = (nearest_supply["bottom"] - close) / cur_atr
             df.at[i, "nearest_supply_dist_atr"] = float(dist)
 
-            in_s = active_supply["bottom"] <= float(cur["high"]) <= active_supply["top"]
-            df.at[i, "in_supply_zone"] = float(in_s)
-            if in_s:
-                active_supply["touches"] += 1
-                active_supply["fresh"]    = False
+            # In supply zone if price high is within the zone
+            in_supply = nearest_supply["bottom"] <= high <= nearest_supply["top"]
+            df.at[i, "in_supply_zone"] = float(in_supply)
+            if in_supply:
+                nearest_supply["touches"] += 1
+                nearest_supply["fresh"]    = False
+        else:
+            df.at[i, "in_supply_zone"] = 0.0
 
-        # Between zones (no-man's land)
-        if active_demand is not None and active_supply is not None:
+        # Between zones — price is between demand top and supply bottom
+        if nearest_demand is not None and nearest_supply is not None:
             between = (
-                active_demand["top"] < float(cur["close"]) < active_supply["bottom"]
+                nearest_demand["top"] < close < nearest_supply["bottom"]
             )
             df.at[i, "between_zones"] = float(between)
+        else:
+            df.at[i, "between_zones"] = 0.0
 
     return df
 
@@ -151,10 +207,6 @@ def detect_zones(
 # ---------------------------------------------------------------------------
 
 def add_confirmation_signals(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Add candlestick confirmation signals as numeric features.
-    These are FEATURES for the model — not hard gates on signal generation.
-    """
     df = df.copy()
 
     body       = (df["close"] - df["open"]).abs()
@@ -164,7 +216,6 @@ def add_confirmation_signals(df: pd.DataFrame) -> pd.DataFrame:
     prev_open  = df["open"].shift(1)
     prev_close = df["close"].shift(1)
 
-    # Bullish engulfing
     df["bullish_engulfing"] = (
         (prev_close < prev_open) &
         (df["close"] > df["open"]) &
@@ -172,7 +223,6 @@ def add_confirmation_signals(df: pd.DataFrame) -> pd.DataFrame:
         (df["close"] > prev_open)
     ).astype(float)
 
-    # Bearish engulfing
     df["bearish_engulfing"] = (
         (prev_close > prev_open) &
         (df["close"] < df["open"]) &
@@ -180,30 +230,25 @@ def add_confirmation_signals(df: pd.DataFrame) -> pd.DataFrame:
         (df["close"] < prev_open)
     ).astype(float)
 
-    # Pin bar bullish (long lower wick)
     safe_body = body.clip(lower=1e-10)
     df["pin_bar_bullish"] = (
         (wick_lower > 2.0 * safe_body) &
         (wick_lower > 2.0 * wick_upper)
     ).astype(float)
 
-    # Pin bar bearish (long upper wick)
     df["pin_bar_bearish"] = (
         (wick_upper > 2.0 * safe_body) &
         (wick_upper > 2.0 * wick_lower)
     ).astype(float)
 
-    # Market structure
-    df["higher_low"]  = (df["low"]  > df["low"].shift(1)).astype(float)
-    df["lower_high"]  = (df["high"] < df["high"].shift(1)).astype(float)
+    df["higher_low"] = (df["low"]  > df["low"].shift(1)).astype(float)
+    df["lower_high"] = (df["high"] < df["high"].shift(1)).astype(float)
 
-    # Break of structure
     swing_high = df["high"].rolling(5).max().shift(1)
     swing_low  = df["low"].rolling(5).min().shift(1)
     df["bos_bullish"] = (df["close"] > swing_high).astype(float)
     df["bos_bearish"] = (df["close"] < swing_low).astype(float)
 
-    # Composite scores (0–4) — used as features, not gates
     df["buy_confirmation_score"]  = (
         df["bullish_engulfing"] + df["pin_bar_bullish"] +
         df["higher_low"]        + df["bos_bullish"]
@@ -223,17 +268,23 @@ def add_confirmation_signals(df: pd.DataFrame) -> pd.DataFrame:
 def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
-    df["atr_14"]   = _atr(df, 14)
-    df["rsi_14"]   = _rsi(df["close"], 14)
-    df["ema_20"]   = _ema(df["close"], 20)
-    df["ema_50"]   = _ema(df["close"], 50)
-    df["ema_200"]  = _ema(df["close"], 200)
+    df["atr_14"]  = _atr(df, 14)
+    df["rsi_14"]  = _rsi(df["close"], 14)
+    df["ema_20"]  = _ema(df["close"], 20)
+    df["ema_50"]  = _ema(df["close"], 50)
+    df["ema_200"] = _ema(df["close"], 200)
 
     safe_atr = df["atr_14"].replace(0, np.nan)
-    df["ema_spread_atr"]    = (df["ema_20"] - df["ema_50"]) / safe_atr
-    df["price_above_ema20"] = (df["close"] > df["ema_20"]).astype(float)
-    df["price_above_ema50"] = (df["close"] > df["ema_50"]).astype(float)
-    df["price_above_ema200"]= (df["close"] > df["ema_200"]).astype(float)
+
+    if "spread" in df.columns:
+        df["spread_norm"] = df["spread"] / safe_atr
+    else:
+        df["spread_norm"] = 0.0
+
+    df["ema_spread_atr"]     = (df["ema_20"] - df["ema_50"]) / safe_atr
+    df["price_above_ema20"]  = (df["close"] > df["ema_20"]).astype(float)
+    df["price_above_ema50"]  = (df["close"] > df["ema_50"]).astype(float)
+    df["price_above_ema200"] = (df["close"] > df["ema_200"]).astype(float)
 
     df["ema_trend_bias"] = np.where(
         (df["ema_20"] > df["ema_50"]) & (df["ema_50"] > df["ema_200"]),  1,
@@ -251,10 +302,21 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df["bb_width_atr"] = bb_width / safe_atr
 
     vol_ma = df["volume"].rolling(20).mean().replace(0, np.nan)
-    df["volume_ratio"]   = df["volume"] / vol_ma
-    df["body_atr_ratio"] = (df["close"] - df["open"]).abs() / safe_atr
-    df["momentum_5"]     = (df["close"] - df["close"].shift(5))  / safe_atr
-    df["momentum_10"]    = (df["close"] - df["close"].shift(10)) / safe_atr
+    df["volume_ratio"] = df["volume"] / vol_ma
+    df["momentum_5"]   = (df["close"] - df["close"].shift(5))  / safe_atr
+    df["momentum_10"]  = (df["close"] - df["close"].shift(10)) / safe_atr
+
+    # ATR-normalized candle metrics
+    df["candle_size_atr"] = df["candle_size"] / safe_atr
+    df["body_size_atr"]   = df["body_size"]   / safe_atr
+    df["wick_upper_atr"]  = df["wick_upper"]  / safe_atr
+    df["wick_lower_atr"]  = df["wick_lower"]  / safe_atr
+    df["body_atr_ratio"]  = df["body_size"]   / safe_atr
+
+    if "day_of_week" in df.columns:
+        df["day_of_week_int"] = df["day_of_week"].map(DAY_OF_WEEK_MAP).fillna(-1).astype(int)
+    else:
+        df["day_of_week_int"] = -1
 
     return df
 
@@ -322,9 +384,6 @@ def build_features(
     zone_lookback: int = 30,
     impulse_atr_multiplier: float = 0.5,
 ) -> pd.DataFrame:
-    """
-    Full feature pipeline. Lower impulse_atr_multiplier = more zones detected.
-    """
     logger.info(f"Building features for {len(df)} rows...")
 
     df = detect_zones(df, lookback=zone_lookback, impulse_atr_multiplier=impulse_atr_multiplier)
@@ -342,7 +401,7 @@ def build_features(
 
 
 # ---------------------------------------------------------------------------
-# Feature column list for ML
+# Feature columns for ML
 # ---------------------------------------------------------------------------
 
 FEATURE_COLUMNS = [
@@ -367,8 +426,10 @@ FEATURE_COLUMNS = [
     "momentum_5", "momentum_10",
     # HTF
     "htf_1h_bias", "htf_4h_bias", "htf_aligned",
-    # Candle context
-    "hour", "month",
-    "direction", "candle_size", "body_size", "wick_upper", "wick_lower",
-    "session",
+    # Candle context — ATR normalized
+    "candle_size_atr", "body_size_atr", "wick_upper_atr", "wick_lower_atr",
+    # Temporal
+    "hour", "month", "day_of_week_int",
+    # Spread
+    "spread_norm",
 ]

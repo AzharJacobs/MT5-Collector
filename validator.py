@@ -76,10 +76,7 @@ class DataValidator:
     ]
 
     # Valid timeframes
-    VALID_TIMEFRAMES = [
-        '1min', '2min', '3min', '4min', '5min',
-        '10min', '15min', '30min', '1H', '4H', '1D'
-    ]
+    VALID_TIMEFRAMES = ['5min', '15min', '1H', '4H']
 
     def __init__(
         self,
