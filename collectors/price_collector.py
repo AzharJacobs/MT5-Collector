@@ -1,15 +1,16 @@
 """
-MT5 Data Collector — Zone-to-Zone ML Build
-==========================================
-Fetches historical OHLCV data from MetaTrader 5 and stores in PostgreSQL.
+Price Collector
+Connects to MetaTrader 5, fetches raw OHLCV data in chunks, and saves it to the DB.
 
-Changes:
-  - Fixed chunk boundary (overlap instead of +1s gap)
-  - Added spread collection
-  - Added find_gaps() to detect missing days post-collection
-  - Added refetch_gaps() to backfill missing windows
-  - Added warning when chunk returns no data
+Changes from original mt5_collector.py:
+  - Moved to collectors/ package
+  - Imports updated: storage.db_writer, validators
+  - Gap detection delegated to validators.gap_checker.GapChecker
 """
+
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import MetaTrader5 as mt5
 import pandas as pd
@@ -26,9 +27,10 @@ from config import (
     DATA_START_DATE,
     DATA_END_DATE,
 )
-from database import DatabaseManager
+from storage.db_writer import DatabaseManager
 from logger import get_logger, CollectionLogger, setup_logging
-from validator import DataValidator, BatchValidationResult
+from validators import DataValidator, BatchValidationResult
+from validators.gap_checker import GapChecker, EXPECTED_CANDLES_PER_DAY
 
 setup_logging()
 logger = get_logger("mt5_collector")
@@ -40,14 +42,6 @@ WINDOW_DAYS = {
     "15min": 60,
     "1H":    180,
     "4H":    365,
-}
-
-# Expected candles per day per timeframe (market hours only ~6.5hrs for USTECm)
-EXPECTED_CANDLES_PER_DAY = {
-    "5min":  78,
-    "15min": 26,
-    "1H":    7,
-    "4H":    2,
 }
 
 
@@ -111,10 +105,10 @@ class MT5Collector:
         self.data_end_date   = parse_date(DATA_END_DATE,   datetime(2026, 1, 1))
         self.data_end_date   = self.data_end_date.replace(hour=23, minute=59, second=59)
 
-        if self.enable_validation:
-            self.validator = DataValidator(check_outliers=True, outlier_std_threshold=5.0)
-        else:
-            self.validator = None
+        self.validator = DataValidator(check_outliers=True, outlier_std_threshold=5.0) \
+            if self.enable_validation else None
+
+        self._gap_checker = GapChecker(self.db.get_cursor, symbol)
 
         logger.info(
             f"MT5Collector ready | symbol={symbol} | "
@@ -156,7 +150,7 @@ class MT5Collector:
     def check_symbol(self) -> bool:
         info = mt5.symbol_info(self.symbol)
         if info is None:
-            logger.error(f"Symbol '{self.symbol}' not found on this broker")
+            logger.error(f"Symbol '{self.symbol}' not found")
             similar = [s.name for s in (mt5.symbols_get() or [])
                        if "TECH" in s.name.upper() or "NAS" in s.name.upper() or "US" in s.name.upper()][:8]
             if similar:
@@ -172,7 +166,7 @@ class MT5Collector:
         return True
 
     # -----------------------------------------------------------------------
-    # Candle builder — now includes spread
+    # Candle builder
     # -----------------------------------------------------------------------
     def _build_candles(self, df: pd.DataFrame, timeframe_name: str) -> List[Dict[str, Any]]:
         candles = []
@@ -183,8 +177,6 @@ class MT5Collector:
             low_p   = float(row["low"])
             close_p = float(row["close"])
             volume  = float(row["tick_volume"])
-
-            # Spread — MT5 returns it as integer points; store as-is
             spread  = int(row["spread"]) if "spread" in row and not pd.isna(row["spread"]) else 0
 
             direction = "buy" if close_p > open_p else ("sell" if close_p < open_p else "neutral")
@@ -224,7 +216,7 @@ class MT5Collector:
         return result.valid_candles, result.invalid_count
 
     # -----------------------------------------------------------------------
-    # Core fetch — FORWARD chunking with overlap (no gaps)
+    # Core fetch — forward chunking with overlap
     # -----------------------------------------------------------------------
     def _fetch_timeframe(
         self,
@@ -238,7 +230,6 @@ class MT5Collector:
         total_inserted = 0
         total_invalid  = 0
         session_counts: Dict[str, int] = {}
-
         current_start = start_date
         chunk_num     = 0
 
@@ -256,21 +247,13 @@ class MT5Collector:
             current_end = min(current_start + timedelta(days=window_days), end_date)
             chunk_num  += 1
 
-            rates = mt5.copy_rates_range(
-                self.symbol,
-                timeframe_const,
-                current_start,
-                current_end,
-            )
+            rates = mt5.copy_rates_range(self.symbol, timeframe_const, current_start, current_end)
 
             if rates is None or len(rates) == 0:
-                # CHANGED: warn instead of silently skipping
                 logger.warning(
-                    f"  ⚠ {timeframe_name} chunk {chunk_num}: "
-                    f"NO DATA returned for {current_start.date()} → {current_end.date()} "
-                    f"— possible gap or broker downtime"
+                    f"  {timeframe_name} chunk {chunk_num}: NO DATA for "
+                    f"{current_start.date()} → {current_end.date()}"
                 )
-                # CHANGED: overlap to current_end (not +1s) so next chunk covers this window
                 current_start = current_end
                 continue
 
@@ -279,7 +262,6 @@ class MT5Collector:
             total_fetched += fetched
 
             candles = self._build_candles(df, timeframe_name)
-
             for c in candles:
                 s = c["session"]
                 session_counts[s] = session_counts.get(s, 0) + 1
@@ -298,8 +280,6 @@ class MT5Collector:
                 f"fetched={fetched:>6,} inserted={inserted:>6,} invalid={invalid}"
             )
 
-            # CHANGED: overlap by using current_end (not current_end + 1s)
-            # ON CONFLICT DO NOTHING handles the duplicate boundary candle
             current_start = current_end
             time.sleep(0.05)
 
@@ -311,76 +291,25 @@ class MT5Collector:
             f"  {timeframe_name} COMPLETE | "
             f"fetched={total_fetched:,} inserted={total_inserted:,} invalid={total_invalid}"
         )
-
         return total_fetched, total_inserted, total_invalid
 
     # -----------------------------------------------------------------------
-    # Gap detection — finds days with suspiciously low candle counts
+    # Gap detection and refetch (delegates to GapChecker)
     # -----------------------------------------------------------------------
-    def find_gaps(self, timeframe_name: str) -> List[Tuple[date, int, int]]:
-        """
-        Returns list of (day, actual_count, expected_count) for days
-        that have less than 50% of expected candles.
-        Skips weekends naturally.
-        """
-        query = """
-            SELECT timestamp::date as day, COUNT(*) as cnt
-            FROM ustech_ohlcv
-            WHERE timeframe = %s AND symbol = %s
-              AND EXTRACT(DOW FROM timestamp) NOT IN (0, 6)  -- skip weekends
-            GROUP BY day
-            ORDER BY day
-        """
-        with self.db.get_cursor() as cursor:
-            cursor.execute(query, (timeframe_name, self.symbol))
-            rows = cursor.fetchall()
+    def find_gaps(self, timeframe_name: str):
+        return self._gap_checker.find_gaps(timeframe_name)
 
-        expected = EXPECTED_CANDLES_PER_DAY.get(timeframe_name, 0)
-        if not expected:
-            return []
-
-        gaps = []
-        for day, count in rows:
-            if count < expected * 0.5:
-                gaps.append((day, int(count), expected))
-
-        if gaps:
-            logger.warning(
-                f"  {timeframe_name}: {len(gaps)} days with <50% expected candles"
-            )
-            for day, cnt, exp in gaps[:10]:  # log first 10
-                logger.warning(f"    {day}: {cnt}/{exp} candles")
-
-        return gaps
-
-    # -----------------------------------------------------------------------
-    # Gap refetch — backfills missing windows
-    # -----------------------------------------------------------------------
     def refetch_gaps(self, timeframe_name: str, timeframe_const: int) -> Tuple[int, int]:
-        """
-        Finds gap days and refetches a 2-day window around each gap.
-        Returns (total_fetched, total_inserted).
-        """
-        gaps = self.find_gaps(timeframe_name)
-        if not gaps:
-            logger.info(f"  {timeframe_name}: no gaps found ✓")
+        windows = self._gap_checker.get_refetch_windows(timeframe_name)
+        if not windows:
             return 0, 0
 
         total_fetched  = 0
         total_inserted = 0
-
-        for gap_day, _, _ in gaps:
-            # Fetch 1 day before and after the gap day to ensure coverage
-            window_start = datetime.combine(gap_day, datetime.min.time()) - timedelta(days=1)
-            window_end   = datetime.combine(gap_day, datetime.min.time()) + timedelta(days=2)
-
-            logger.info(f"  Refetching gap: {gap_day} ({window_start.date()} → {window_end.date()})")
-
-            fetched, inserted, _ = self._fetch_timeframe(
-                timeframe_name, timeframe_const, window_start, window_end
-            )
-            total_fetched  += fetched
-            total_inserted += inserted
+        for window_start, window_end in windows:
+            f, i, _ = self._fetch_timeframe(timeframe_name, timeframe_const, window_start, window_end)
+            total_fetched  += f
+            total_inserted += i
 
         logger.info(
             f"  {timeframe_name} gap refetch complete | "
@@ -397,15 +326,11 @@ class MT5Collector:
         timeframe_const: int,
     ) -> Tuple[int, int, int]:
         latest = self.db.get_latest_timestamp(self.symbol, timeframe_name)
-
         if latest:
             if latest >= self.data_end_date:
-                logger.info(
-                    f"  {timeframe_name}: already up to date "
-                    f"(latest={latest.date()}, end={self.data_end_date.date()})"
-                )
+                logger.info(f"  {timeframe_name}: already up to date")
                 return 0, 0, 0
-            start = latest  # CHANGED: overlap instead of +1s
+            start = latest
             logger.info(f"  {timeframe_name}: incremental from {start.date()}")
         else:
             start = self.data_start_date
@@ -421,36 +346,23 @@ class MT5Collector:
 
         for timeframe_name, tf_const_name in TIMEFRAMES:
             tf_const = self.TIMEFRAME_MAP[tf_const_name]
-
             try:
                 self.collection_logger.log_timeframe_start(timeframe_name)
 
                 if incremental:
-                    fetched, inserted, invalid = self._fetch_incremental(
-                        timeframe_name, tf_const
-                    )
+                    fetched, inserted, invalid = self._fetch_incremental(timeframe_name, tf_const)
                 else:
                     fetched, inserted, invalid = self._fetch_timeframe(
-                        timeframe_name, tf_const,
-                        self.data_start_date, self.data_end_date,
+                        timeframe_name, tf_const, self.data_start_date, self.data_end_date
                     )
 
-                results[timeframe_name] = {
-                    "fetched":  fetched,
-                    "inserted": inserted,
-                    "invalid":  invalid,
-                }
-                self.collection_logger.log_timeframe_complete(
-                    timeframe_name, fetched, inserted
-                )
+                results[timeframe_name] = {"fetched": fetched, "inserted": inserted, "invalid": invalid}
+                self.collection_logger.log_timeframe_complete(timeframe_name, fetched, inserted)
 
             except Exception as e:
                 logger.error(f"Error collecting {timeframe_name}: {e}", exc_info=True)
-                results[timeframe_name] = {
-                    "fetched": 0, "inserted": 0, "invalid": 0, "error": str(e)
-                }
+                results[timeframe_name] = {"fetched": 0, "inserted": 0, "invalid": 0, "error": str(e)}
 
-        # --- Run gap detection and refetch after all timeframes collected ---
         logger.info("\n" + "="*50)
         logger.info("  Running gap detection on all timeframes...")
         logger.info("="*50)
@@ -472,7 +384,6 @@ class MT5Collector:
         mode = "incremental" if incremental else "full"
         self.collection_logger.start_collection(self.symbol, mode)
 
-        # Log confirmed date range upfront
         logger.info(
             f"\n{'='*50}\n"
             f"  Date range confirmed:\n"
@@ -529,7 +440,7 @@ def main():
     parser.add_argument("--symbol",         type=str, default=SYMBOL)
     parser.add_argument("--no-validation",  action="store_true")
     parser.add_argument("--broker-offset",  type=int, default=BROKER_UTC_OFFSET)
-    parser.add_argument("--check-gaps",     action="store_true", help="Only run gap detection, no collection")
+    parser.add_argument("--check-gaps",     action="store_true")
     args = parser.parse_args()
 
     collector = MT5Collector(
@@ -538,7 +449,6 @@ def main():
         broker_utc_offset=args.broker_offset,
     )
 
-    # Gap-only mode
     if args.check_gaps:
         print("Running gap detection only...")
         collector.initialize()

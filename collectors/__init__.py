@@ -1,0 +1,3 @@
+from collectors.price_collector import MT5Collector
+from collectors.calendar_collector import CalendarCollector
+from collectors.fundamental_collector import FundamentalCollector

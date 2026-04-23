@@ -1,0 +1,21 @@
+# MT5 Collector - Watchlist
+# Primary symbol and any alternates to try if the primary is unavailable on the broker
+
+primary:
+  symbol: USTECm
+  description: US Tech 100 index (MetaTrader 5 CFD)
+  digits: 2
+
+alternates:
+  - NAS100
+  - NAS100m
+  - USTEC
+  - US100
+  - NDX
+
+# Future expansion: additional symbols to collect
+additional: []
+# - symbol: US30m
+#   description: Dow Jones 30
+# - symbol: SPX500m
+#   description: S&P 500

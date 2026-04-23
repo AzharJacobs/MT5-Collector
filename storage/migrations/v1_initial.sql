@@ -1,9 +1,9 @@
--- MT5 OHLCV Data Collector - Database Schema
--- Includes ML features table for Zone-to-Zone strategy
--- Run this manually if you prefer direct SQL setup
+-- MT5 OHLCV Data Collector — Initial Schema (v1)
+-- Includes core OHLCV table, ML features table, views, and indexes.
+-- Run via: psql -U postgres -d ustech_ohlcv -f storage/migrations/v1_initial.sql
 
 -- ============================================================
--- 1. CORE OHLCV TABLE (unchanged)
+-- 1. CORE OHLCV TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS ustech_ohlcv (
     id SERIAL PRIMARY KEY,
@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS ustech_ohlcv (
     low DECIMAL(18, 6) NOT NULL,
     close DECIMAL(18, 6) NOT NULL,
     volume DECIMAL(18, 6) NOT NULL,
+    spread INTEGER NOT NULL DEFAULT 0,
     direction TEXT NOT NULL,
     candle_size DECIMAL(18, 6) NOT NULL,
     body_size DECIMAL(18, 6) NOT NULL,
@@ -51,14 +52,13 @@ CREATE TABLE IF NOT EXISTS ustech_features (
     timeframe TEXT NOT NULL,
     timestamp TIMESTAMP NOT NULL,
 
-    -- Raw OHLCV (kept for reference)
     open DECIMAL(18, 6),
     high DECIMAL(18, 6),
     low DECIMAL(18, 6),
     close DECIMAL(18, 6),
     volume DECIMAL(18, 6),
 
-    -- ---- Zone Features ----
+    -- Zone Features
     demand_zone_top DECIMAL(18, 6),
     demand_zone_bottom DECIMAL(18, 6),
     demand_zone_strength DECIMAL(8, 4),
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS ustech_features (
     in_supply_zone INTEGER,
     between_zones INTEGER,
 
-    -- ---- Confirmation Signals ----
+    -- Confirmation Signals
     bullish_engulfing INTEGER,
     bearish_engulfing INTEGER,
     pin_bar_bullish INTEGER,
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS ustech_features (
     buy_confirmation_score INTEGER,
     sell_confirmation_score INTEGER,
 
-    -- ---- Technical Indicators ----
+    -- Technical Indicators
     atr_14 DECIMAL(18, 6),
     rsi_14 DECIMAL(8, 4),
     ema_20 DECIMAL(18, 6),
@@ -107,12 +107,12 @@ CREATE TABLE IF NOT EXISTS ustech_features (
     momentum_5 DECIMAL(10, 4),
     momentum_10 DECIMAL(10, 4),
 
-    -- ---- HTF Context ----
+    -- HTF Context
     htf_1h_bias INTEGER,
     htf_4h_bias INTEGER,
     htf_aligned INTEGER,
 
-    -- ---- Candle Context ----
+    -- Candle Context
     hour INTEGER,
     day_of_week TEXT,
     month INTEGER,
@@ -123,21 +123,19 @@ CREATE TABLE IF NOT EXISTS ustech_features (
     wick_upper DECIMAL(18, 6),
     wick_lower DECIMAL(18, 6),
 
-    -- ---- Labels (Zone-to-Zone strategy) ----
-    signal INTEGER,             -- 1=buy, -1=sell, 0=no signal
+    -- Labels (Zone-to-Zone strategy)
+    signal INTEGER,
     signal_reason TEXT,
-    trade_outcome INTEGER,      -- 1=TP hit, -1=SL hit, 0=expired
-    label INTEGER,              -- final ML label: 1, -1, or 0
+    trade_outcome INTEGER,
+    label INTEGER,
     tp_price DECIMAL(18, 6),
     sl_price DECIMAL(18, 6),
     rr_ratio DECIMAL(8, 4),
 
-    -- Prevent duplicate feature rows
     CONSTRAINT unique_features_symbol_tf_ts
         UNIQUE (symbol, timeframe, timestamp)
 );
 
--- Indexes for fast ML queries
 CREATE INDEX IF NOT EXISTS idx_features_timeframe_ts
 ON ustech_features (timeframe, timestamp DESC);
 
@@ -153,35 +151,28 @@ ON ustech_features (session);
 -- ============================================================
 -- 3. VIEWS
 -- ============================================================
-
--- Main OHLCV view (unchanged)
 CREATE OR REPLACE VIEW ustech_view AS
 SELECT
     id, symbol, timeframe, timestamp, date, time, hour,
     day_of_week, month, year, open, high, low, close, volume,
-    direction, candle_size, body_size, wick_upper, wick_lower, session
+    spread, direction, candle_size, body_size, wick_upper, wick_lower, session
 FROM ustech_ohlcv
 ORDER BY
     CASE timeframe
-        WHEN '1min'  THEN 1  WHEN '2min'  THEN 2  WHEN '3min'  THEN 3
-        WHEN '4min'  THEN 4  WHEN '5min'  THEN 5  WHEN '10min' THEN 6
-        WHEN '15min' THEN 7  WHEN '30min' THEN 8  WHEN '1H'    THEN 9
-        WHEN '4H'    THEN 10 WHEN '1D'    THEN 11 ELSE 99
+        WHEN '5min' THEN 5 WHEN '15min' THEN 7
+        WHEN '1H'   THEN 9 WHEN '4H'    THEN 10
+        ELSE 99
     END,
     timestamp DESC;
 
--- ML-ready view: only labeled signal rows
 CREATE OR REPLACE VIEW ustech_signals AS
-SELECT *
-FROM ustech_features
+SELECT * FROM ustech_features
 WHERE signal != 0
 ORDER BY timeframe, timestamp DESC;
 
--- Win rate summary by timeframe and session
 CREATE OR REPLACE VIEW ustech_signal_stats AS
 SELECT
-    timeframe,
-    session,
+    timeframe, session,
     COUNT(*) FILTER (WHERE signal != 0) AS total_signals,
     COUNT(*) FILTER (WHERE label = 1)   AS buy_winners,
     COUNT(*) FILTER (WHERE label = -1)  AS sell_winners,
@@ -194,18 +185,3 @@ SELECT
 FROM ustech_features
 GROUP BY timeframe, session
 ORDER BY timeframe, win_rate_pct DESC;
-
-
--- ============================================================
--- Useful queries
--- ============================================================
-
--- Check signal win rate by timeframe:
--- SELECT * FROM ustech_signal_stats;
-
--- Get all buy signals on 5min:
--- SELECT timestamp, close, tp_price, sl_price, rr_ratio, trade_outcome
--- FROM ustech_signals WHERE timeframe = '5min' AND signal = 1;
-
--- Export ML features for training (Python: pd.read_sql):
--- SELECT * FROM ustech_features WHERE timeframe = '5min' AND label != 0;

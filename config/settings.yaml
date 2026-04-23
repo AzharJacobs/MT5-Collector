@@ -1,0 +1,56 @@
+# MT5 Collector - Settings
+# Secrets (DB password, MT5 credentials) stay in .env — load with python-dotenv
+# Non-secret defaults and structure are documented here for reference
+
+database:
+  host: localhost
+  port: 5432
+  name: ustech_ohlcv
+  user: postgres
+  # password: loaded from DB_PASSWORD in .env
+
+mt5:
+  # login: loaded from MT5_LOGIN in .env
+  # password: loaded from MT5_PASSWORD in .env
+  # server: loaded from MT5_SERVER in .env
+  broker_utc_offset: 3   # GMT+3 broker time offset
+
+collection:
+  symbol: USTECm
+  chunk_size: 10000
+  data_start_date: "2024-01-01"
+  data_end_date: "2026-01-01"
+  enable_validation: true
+  outlier_std_threshold: 5.0
+
+timeframes:
+  - name: "5min"
+    mt5_const: "TIMEFRAME_M5"
+    window_days: 30
+    expected_candles_per_day: 78
+  - name: "15min"
+    mt5_const: "TIMEFRAME_M15"
+    window_days: 60
+    expected_candles_per_day: 26
+  - name: "1H"
+    mt5_const: "TIMEFRAME_H1"
+    window_days: 180
+    expected_candles_per_day: 7
+  - name: "4H"
+    mt5_const: "TIMEFRAME_H4"
+    window_days: 365
+    expected_candles_per_day: 2
+
+sessions:
+  asian:            { utc_start: 0,  utc_end: 7  }
+  london:           { utc_start: 7,  utc_end: 12 }
+  london_ny_overlap:{ utc_start: 12, utc_end: 16 }
+  new_york:         { utc_start: 16, utc_end: 21 }
+  off_hours:        { utc_start: 21, utc_end: 24 }
+
+logging:
+  log_dir: logs
+  max_bytes: 10485760   # 10 MB
+  backup_count: 10
+  console_level: INFO
+  file_level: DEBUG
