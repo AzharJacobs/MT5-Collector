@@ -51,8 +51,8 @@ class DataReader(DatabaseManager):
         where  = " AND ".join(conditions)
         limit_clause = f"LIMIT {limit}" if limit else ""
         query  = f"""
-        SELECT * FROM ustech_ohlcv
-        WHERE {where}
+        SELECT * FROM ustech_verified
+        WHERE is_verified = TRUE AND {where}
         ORDER BY timestamp ASC
         {limit_clause};
         """
@@ -87,7 +87,7 @@ class DataReader(DatabaseManager):
             params["end_date"] = end_date
 
         where = " AND ".join(conditions)
-        query = f"SELECT * FROM ustech_ohlcv WHERE {where} ORDER BY timestamp ASC;"
+        query = f"SELECT * FROM ustech_verified WHERE is_verified = TRUE AND {where} ORDER BY timestamp ASC;"
         return pd.read_sql(query, engine, params=params)
 
     def get_latest_candles(
@@ -104,8 +104,8 @@ class DataReader(DatabaseManager):
             params.append(symbol)
         where = " AND ".join(conditions)
         query = f"""
-        SELECT * FROM ustech_ohlcv
-        WHERE {where}
+        SELECT * FROM ustech_verified
+        WHERE is_verified = TRUE AND {where}
         ORDER BY timestamp DESC
         LIMIT %s;
         """
@@ -120,7 +120,7 @@ class DataReader(DatabaseManager):
         query = """
         SELECT MIN(timestamp) AS earliest, MAX(timestamp) AS latest,
                COUNT(*) AS total_candles
-        FROM ustech_ohlcv WHERE timeframe = %s;
+        FROM ustech_verified WHERE is_verified = TRUE AND timeframe = %s;
         """
         with self.get_cursor() as cursor:
             cursor.execute(query, (timeframe,))
@@ -138,7 +138,7 @@ class DataReader(DatabaseManager):
         SELECT hour, COUNT(*) AS count,
                ROUND(AVG(close - open), 4) AS avg_move,
                ROUND(AVG(candle_size), 4) AS avg_range
-        FROM ustech_ohlcv WHERE timeframe = %s
+        FROM ustech_verified WHERE is_verified = TRUE AND timeframe = %s
         GROUP BY hour ORDER BY hour;
         """
         with self.get_cursor() as cursor:

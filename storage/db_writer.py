@@ -12,6 +12,7 @@ import psycopg2
 from psycopg2 import sql
 from psycopg2.extras import execute_values
 from contextlib import contextmanager
+from datetime import datetime as _dt
 from typing import List, Dict, Any, Optional
 import logging
 
@@ -118,6 +119,46 @@ class DatabaseManager:
             cursor.execute(create_table_sql)
             logger.info("Table 'ustech_ohlcv' created/verified")
 
+    def create_verified_table(self) -> None:
+        """Create ustech_verified — the post-validation table read by the ML engine."""
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS ustech_verified (
+            id SERIAL PRIMARY KEY,
+            symbol TEXT NOT NULL,
+            timeframe TEXT NOT NULL,
+            timestamp TIMESTAMP NOT NULL,
+            date DATE NOT NULL,
+            time TIME NOT NULL,
+            hour INTEGER NOT NULL,
+            day_of_week TEXT NOT NULL,
+            month INTEGER NOT NULL,
+            year INTEGER NOT NULL,
+            open DECIMAL(18, 6) NOT NULL,
+            high DECIMAL(18, 6) NOT NULL,
+            low DECIMAL(18, 6) NOT NULL,
+            close DECIMAL(18, 6) NOT NULL,
+            volume DECIMAL(18, 6) NOT NULL,
+            spread INTEGER NOT NULL DEFAULT 0,
+            direction TEXT NOT NULL,
+            candle_size DECIMAL(18, 6) NOT NULL,
+            body_size DECIMAL(18, 6) NOT NULL,
+            wick_upper DECIMAL(18, 6) NOT NULL,
+            wick_lower DECIMAL(18, 6) NOT NULL,
+            session TEXT NOT NULL DEFAULT 'unknown',
+            gap_checked BOOLEAN NOT NULL DEFAULT FALSE,
+            duplicate_checked BOOLEAN NOT NULL DEFAULT FALSE,
+            anomaly_checked BOOLEAN NOT NULL DEFAULT FALSE,
+            is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+            verified_at TIMESTAMP,
+            source_id INTEGER,
+            CONSTRAINT unique_verified_symbol_timeframe_timestamp
+                UNIQUE (symbol, timeframe, timestamp)
+        );
+        """
+        with self.get_cursor() as cursor:
+            cursor.execute(create_table_sql)
+            logger.info("Table 'ustech_verified' created/verified")
+
     def create_index(self) -> None:
         indexes = [
             "CREATE INDEX IF NOT EXISTS idx_timeframe_timestamp ON ustech_ohlcv (timeframe, timestamp DESC);",
@@ -175,6 +216,7 @@ class DatabaseManager:
         self.create_table()
         self.migrate_add_session_column()
         self.migrate_add_spread_column()
+        self.create_verified_table()
         self.create_index()
         self.create_view()
         logger.info("Schema setup complete")
@@ -203,6 +245,42 @@ class DatabaseManager:
                 c['volume'], c.get('spread', 0), c['direction'],
                 c['candle_size'], c['body_size'], c['wick_upper'],
                 c['wick_lower'], c['session']
+            )
+            for c in candles
+        ]
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            execute_values(cursor, insert_sql, values)
+            inserted = cursor.rowcount
+            cursor.close()
+            return inserted
+
+    def insert_verified_candles(self, candles: List[Dict[str, Any]]) -> int:
+        """Insert validated candles into ustech_verified with all check flags TRUE."""
+        if not candles:
+            return 0
+
+        verified_at = _dt.utcnow()
+        insert_sql = """
+        INSERT INTO ustech_verified (
+            symbol, timeframe, timestamp, date, time, hour,
+            day_of_week, month, year, open, high, low, close,
+            volume, spread, direction, candle_size, body_size,
+            wick_upper, wick_lower, session,
+            gap_checked, duplicate_checked, anomaly_checked,
+            is_verified, verified_at, source_id
+        ) VALUES %s
+        ON CONFLICT (symbol, timeframe, timestamp) DO NOTHING;
+        """
+        values = [
+            (
+                c['symbol'], c['timeframe'], c['timestamp'], c['date'],
+                c['time'], c['hour'], c['day_of_week'], c['month'],
+                c['year'], c['open'], c['high'], c['low'], c['close'],
+                c['volume'], c.get('spread', 0), c['direction'],
+                c['candle_size'], c['body_size'], c['wick_upper'],
+                c['wick_lower'], c['session'],
+                True, True, True, True, verified_at, c.get('id'),
             )
             for c in candles
         ]
