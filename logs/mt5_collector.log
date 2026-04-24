@@ -7514,3 +7514,41 @@ HINT:  Use ALTER VIEW ... RENAME COLUMN ... to change name of view column instea
 2026-04-21 19:49:35 | WARNING  | mt5_collector        | mt5_collector.py:352 |     2025-01-01: 1/7 candles
 2026-04-21 19:49:35 | WARNING  | mt5_collector        | mt5_collector.py:352 |     2025-12-25: 1/7 candles
 2026-04-21 19:49:35 | INFO     | mt5_collector        | mt5_collector.py:154 | MT5 disconnected
+2026-04-24 10:53:47 | INFO     | mt5_collector.verify | main.py:69 | =======================================================
+2026-04-24 10:53:47 | INFO     | mt5_collector.verify | main.py:70 | Verifying USTECm 5min
+2026-04-24 10:53:48 | INFO     | mt5_collector.verify | main.py:77 |   Fetched:              80,072
+2026-04-24 10:53:48 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:74 | 5min: 3 days with <50% expected candles
+2026-04-24 10:53:48 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 |   2024-12-25: 12/78 candles
+2026-04-24 10:53:48 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 |   2025-01-01: 12/78 candles
+2026-04-24 10:53:48 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 |   2025-12-25: 12/78 candles
+2026-04-24 10:53:48 | INFO     | mt5_collector.verify | main.py:86 |   Duplicates:                0 dropped
+2026-04-24 10:57:02 | INFO     | mt5_collector.verify | main.py:103 |   Anomalies:                 0 dropped
+2026-04-24 10:57:10 | INFO     | mt5_collector.verify | main.py:108 |   Written:                  72
+2026-04-24 10:57:10 | INFO     | mt5_collector.verify | main.py:69 | =======================================================
+2026-04-24 10:57:10 | INFO     | mt5_collector.verify | main.py:70 | Verifying USTECm 15min
+2026-04-24 10:57:11 | INFO     | mt5_collector.verify | main.py:77 |   Fetched:              46,902
+2026-04-24 10:57:11 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:74 | 15min: 4 days with <50% expected candles
+2026-04-24 10:57:11 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 |   2024-01-01: 4/26 candles
+2026-04-24 10:57:11 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 |   2024-12-25: 4/26 candles
+2026-04-24 10:57:11 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 |   2025-01-01: 4/26 candles
+2026-04-24 10:57:11 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 |   2025-12-25: 4/26 candles
+2026-04-24 10:57:11 | INFO     | mt5_collector.verify | main.py:86 |   Duplicates:                0 dropped
+2026-04-24 10:59:04 | INFO     | mt5_collector.verify | main.py:103 |   Anomalies:                 0 dropped
+2026-04-24 10:59:10 | INFO     | mt5_collector.verify | main.py:108 |   Written:                   2
+2026-04-24 10:59:10 | INFO     | mt5_collector.verify | main.py:69 | =======================================================
+2026-04-24 10:59:10 | INFO     | mt5_collector.verify | main.py:70 | Verifying USTECm 1H
+2026-04-24 10:59:10 | INFO     | mt5_collector.verify | main.py:77 |   Fetched:              11,732
+2026-04-24 10:59:10 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:74 | 1H: 4 days with <50% expected candles
+2026-04-24 10:59:10 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 |   2024-01-01: 1/7 candles
+2026-04-24 10:59:10 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 |   2024-12-25: 1/7 candles
+2026-04-24 10:59:10 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 |   2025-01-01: 1/7 candles
+2026-04-24 10:59:10 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 |   2025-12-25: 1/7 candles
+2026-04-24 10:59:10 | INFO     | mt5_collector.verify | main.py:86 |   Duplicates:                0 dropped
+2026-04-24 10:59:38 | INFO     | mt5_collector.verify | main.py:103 |   Anomalies:                 0 dropped
+2026-04-24 10:59:40 | INFO     | mt5_collector.verify | main.py:108 |   Written:                  32
+2026-04-24 10:59:40 | INFO     | mt5_collector.verify | main.py:69 | =======================================================
+2026-04-24 10:59:40 | INFO     | mt5_collector.verify | main.py:70 | Verifying USTECm 4H
+2026-04-24 10:59:40 | INFO     | mt5_collector.verify | main.py:77 |   Fetched:               3,162
+2026-04-24 10:59:40 | INFO     | mt5_collector.verify | main.py:86 |   Duplicates:                0 dropped
+2026-04-24 10:59:47 | INFO     | mt5_collector.verify | main.py:103 |   Anomalies:                 0 dropped
+2026-04-24 10:59:47 | INFO     | mt5_collector.verify | main.py:108 |   Written:                  62
