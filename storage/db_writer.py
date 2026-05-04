@@ -301,6 +301,13 @@ class DatabaseManager:
             result = cursor.fetchone()
             return result[0] if result and result[0] else None
 
+    def get_earliest_timestamp(self, symbol: str, timeframe: str) -> Optional[str]:
+        query = "SELECT MIN(timestamp) FROM ustech_ohlcv WHERE symbol = %s AND timeframe = %s;"
+        with self.get_cursor() as cursor:
+            cursor.execute(query, (symbol, timeframe))
+            result = cursor.fetchone()
+            return result[0] if result and result[0] else None
+
     def get_row_count(self, timeframe: str = None) -> int:
         if timeframe:
             query  = "SELECT COUNT(*) FROM ustech_ohlcv WHERE timeframe = %s;"

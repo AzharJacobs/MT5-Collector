@@ -325,18 +325,42 @@ class MT5Collector:
         timeframe_name: str,
         timeframe_const: int,
     ) -> Tuple[int, int, int]:
-        latest = self.db.get_latest_timestamp(self.symbol, timeframe_name)
-        if latest:
-            if latest >= self.data_end_date:
-                logger.info(f"  {timeframe_name}: already up to date")
-                return 0, 0, 0
-            start = latest
-            logger.info(f"  {timeframe_name}: incremental from {start.date()}")
-        else:
-            start = self.data_start_date
-            logger.info(f"  {timeframe_name}: no existing data, full fetch")
+        earliest = self.db.get_earliest_timestamp(self.symbol, timeframe_name)
+        latest   = self.db.get_latest_timestamp(self.symbol, timeframe_name)
 
-        return self._fetch_timeframe(timeframe_name, timeframe_const, start, self.data_end_date)
+        if latest is None:
+            logger.info(f"  {timeframe_name}: no existing data, full fetch from {self.data_start_date.date()}")
+            return self._fetch_timeframe(timeframe_name, timeframe_const, self.data_start_date, self.data_end_date)
+
+        total_fetched = total_inserted = total_invalid = 0
+
+        # Backfill: data exists but starts later than the configured start date
+        if earliest and earliest > self.data_start_date:
+            logger.info(
+                f"  {timeframe_name}: historical gap detected — "
+                f"DB starts {earliest.date()}, config starts {self.data_start_date.date()}. "
+                f"Backfilling {self.data_start_date.date()} → {earliest.date()}"
+            )
+            f, i, inv = self._fetch_timeframe(
+                timeframe_name, timeframe_const, self.data_start_date, earliest
+            )
+            total_fetched  += f
+            total_inserted += i
+            total_invalid  += inv
+
+        # Forward fill: fetch from latest up to the configured end date
+        if latest >= self.data_end_date:
+            logger.info(f"  {timeframe_name}: already up to date (forward)")
+        else:
+            logger.info(f"  {timeframe_name}: forward fill from {latest.date()} → {self.data_end_date.date()}")
+            f, i, inv = self._fetch_timeframe(
+                timeframe_name, timeframe_const, latest, self.data_end_date
+            )
+            total_fetched  += f
+            total_inserted += i
+            total_invalid  += inv
+
+        return total_fetched, total_inserted, total_invalid
 
     # -----------------------------------------------------------------------
     # Collect all timeframes

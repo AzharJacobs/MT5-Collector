@@ -99,3 +99,26 @@ class GapChecker:
             logger.info(f"  Gap window: {gap_day} → refetch {start.date()} to {end.date()}")
 
         return windows
+
+    def get_earliest_db_date(self, timeframe_name: str) -> date | None:
+        """Returns the earliest date stored in the DB for this timeframe, or None if no data."""
+        query = """
+            SELECT MIN(timestamp::date)
+            FROM ustech_ohlcv
+            WHERE timeframe = %s AND symbol = %s
+        """
+        with self.get_cursor() as cursor:
+            cursor.execute(query, (timeframe_name, self.symbol))
+            result = cursor.fetchone()
+            return result[0] if result and result[0] else None
+
+    def has_leading_gap(self, timeframe_name: str, config_start: date) -> bool:
+        """
+        Returns True if the earliest data in the DB is after config_start,
+        meaning there is a missing leading date range that the incremental fetch
+        would normally skip over.
+        """
+        earliest = self.get_earliest_db_date(timeframe_name)
+        if earliest is None:
+            return False
+        return earliest > config_start
