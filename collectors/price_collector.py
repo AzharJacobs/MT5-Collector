@@ -334,8 +334,10 @@ class MT5Collector:
 
         total_fetched = total_inserted = total_invalid = 0
 
-        # Backfill: data exists but starts later than the configured start date
-        if earliest and earliest > self.data_start_date:
+        # Backfill: data exists but starts more than a day after the configured start date.
+        # Compare by date only to avoid false triggers when the first candle arrives
+        # partway through Jan 1 (e.g. 23:00) while data_start_date is midnight Jan 1.
+        if earliest and earliest.date() > (self.data_start_date + timedelta(days=1)).date():
             logger.info(
                 f"  {timeframe_name}: historical gap detected — "
                 f"DB starts {earliest.date()}, config starts {self.data_start_date.date()}. "
