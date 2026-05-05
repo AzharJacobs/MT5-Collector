@@ -29,15 +29,17 @@ class GapChecker:
     then provides windows to refetch for each gap.
     """
 
-    def __init__(self, db_cursor_fn, symbol: str):
+    def __init__(self, db_cursor_fn, symbol: str, table_name: str = "ustech_ohlcv"):
         """
         Args:
             db_cursor_fn: A context-manager callable that yields a DB cursor.
                           Typically DatabaseManager.get_cursor from storage.db_writer.
             symbol: The trading symbol to check.
+            table_name: The raw OHLCV table to query (default: ustech_ohlcv).
         """
         self.get_cursor = db_cursor_fn
         self.symbol = symbol
+        self.table_name = table_name
 
     def find_gaps(
         self,
@@ -48,9 +50,9 @@ class GapChecker:
         Returns list of (day, actual_count, expected_count) for days that have
         less than `threshold` * expected candles. Skips weekends automatically.
         """
-        query = """
+        query = f"""
             SELECT timestamp::date AS day, COUNT(*) AS cnt
-            FROM ustech_ohlcv
+            FROM {self.table_name}
             WHERE timeframe = %s AND symbol = %s
               AND EXTRACT(DOW FROM timestamp) NOT IN (0, 6)
             GROUP BY day
@@ -102,9 +104,9 @@ class GapChecker:
 
     def get_earliest_db_date(self, timeframe_name: str) -> date | None:
         """Returns the earliest date stored in the DB for this timeframe, or None if no data."""
-        query = """
+        query = f"""
             SELECT MIN(timestamp::date)
-            FROM ustech_ohlcv
+            FROM {self.table_name}
             WHERE timeframe = %s AND symbol = %s
         """
         with self.get_cursor() as cursor:
