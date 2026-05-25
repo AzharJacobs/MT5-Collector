@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from typing import List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from validators.schema_validator import ValidationResult
 from logger import get_logger
@@ -91,7 +91,8 @@ class AnomalyDetector:
         try:
             timestamp = candle.get('timestamp')
             if isinstance(timestamp, datetime):
-                if timestamp > datetime.now() + timedelta(days=1):
+                now = datetime.now(tz=timezone.utc) if timestamp.tzinfo else datetime.now()
+                if timestamp > now + timedelta(days=1):
                     result.add_error(f"Future timestamp: {timestamp}")
                 if timestamp.year < 1990:
                     result.add_error(f"Timestamp too old: {timestamp}")
