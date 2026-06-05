@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import MetaTrader5 as mt5
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from typing import List, Dict, Any, Optional, Tuple
 import time
 
@@ -171,7 +171,8 @@ class MT5Collector:
     def _build_candles(self, df: pd.DataFrame, timeframe_name: str) -> List[Dict[str, Any]]:
         candles = []
         for _, row in df.iterrows():
-            ts      = pd.to_datetime(row["time"], unit="s")
+            ts      = (pd.to_datetime(row["time"], unit="s")
+                       .tz_localize("Etc/GMT-3").tz_convert("UTC").tz_localize(None))
             open_p  = float(row["open"])
             high_p  = float(row["high"])
             low_p   = float(row["low"])
@@ -180,7 +181,7 @@ class MT5Collector:
             spread  = int(row["spread"]) if "spread" in row and not pd.isna(row["spread"]) else 0
 
             direction = "buy" if close_p > open_p else ("sell" if close_p < open_p else "neutral")
-            session   = "daily" if timeframe_name == "1D" else get_session(ts, self.broker_utc_offset)
+            session   = "daily" if timeframe_name == "1D" else get_session(ts, 0)
 
             candles.append({
                 "symbol":      self.symbol,
@@ -247,7 +248,22 @@ class MT5Collector:
             current_end = min(current_start + timedelta(days=window_days), end_date)
             chunk_num  += 1
 
-            rates = mt5.copy_rates_range(self.symbol, timeframe_const, current_start, current_end)
+            now_utc = datetime.utcnow()
+            if current_end > now_utc:
+                # Chunk extends into the future — use copy_rates_from_pos starting at
+                # position 1 so the currently forming bar (position 0) is never fetched.
+                _bars_per_day = {"5min": 288, "15min": 96, "1H": 24, "4H": 6}.get(timeframe_name, 96)
+                n_bars = min(int((current_end - current_start).days * _bars_per_day * 1.3) + 300, 100_000)
+                rates = mt5.copy_rates_from_pos(self.symbol, timeframe_const, 1, n_bars)
+                if rates is not None and len(rates) > 0:
+                    # MT5 timestamps are Unix seconds in broker time; trim to this window.
+                    _window_start_broker_ts = (
+                        int(current_start.replace(tzinfo=timezone.utc).timestamp())
+                        + self.broker_utc_offset * 3600
+                    )
+                    rates = rates[rates["time"] >= _window_start_broker_ts]
+            else:
+                rates = mt5.copy_rates_range(self.symbol, timeframe_const, current_start, current_end)
 
             if rates is None or len(rates) == 0:
                 logger.warning(
