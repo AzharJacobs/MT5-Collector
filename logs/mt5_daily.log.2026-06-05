@@ -1,0 +1,219 @@
+2026-06-05 10:35:35 | INFO     | mt5_collector        | price_collector.py:113 | MT5Collector ready | symbol=USTECm | range=2023-01-01 → 2026-06-05 | broker_offset=GMT+3
+2026-06-05 10:35:35 | INFO     | mt5_collector.collection | logger.py:205 | ============================================================
+2026-06-05 10:35:35 | INFO     | mt5_collector.collection | logger.py:206 | COLLECTION STARTED
+2026-06-05 10:35:35 | INFO     | mt5_collector.collection | logger.py:207 | Symbol: USTECm
+2026-06-05 10:35:35 | INFO     | mt5_collector.collection | logger.py:208 | Mode: full
+2026-06-05 10:35:35 | INFO     | mt5_collector.collection | logger.py:209 | Time: 2026-06-05 10:35:35.889566
+2026-06-05 10:35:35 | INFO     | mt5_collector.collection | logger.py:210 | ============================================================
+2026-06-05 10:35:35 | INFO     | mt5_collector        | price_collector.py:429 | 
+==================================================
+  Date range confirmed:
+  START : 2023-01-01
+  END   : 2026-06-05
+==================================================
+2026-06-05 10:35:35 | INFO     | mt5_collector        | price_collector.py:439 | Setting up database schema...
+2026-06-05 10:35:36 | INFO     | mt5_collector        | price_collector.py:123 | Connecting to MT5...
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:137 | Logged in: account 295134074
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:142 | Terminal: MetaTrader 5 build 5833
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:165 | Symbol 'USTECm' OK | digits=2 spread=240
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:450 | 
+==================================================
+  Starting FULL collection
+  Symbol : USTECm
+  Range  : 2023-01-01 → 2026-06-05
+==================================================
+2026-06-05 10:35:39 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 5min
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:237 | 
+──────────────────────────────────────────────────
+  Timeframe : 5min
+  From      : 2023-01-01
+  To        : 2026-06-05
+  Window    : 30 days/chunk
+  Est chunks: ~41
+──────────────────────────────────────────────────
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk   1: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk   2: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk   3: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk   4: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk   5: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk   6: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk   7: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:39 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk   8: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:40 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk   9: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:40 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  10: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:40 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  11: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:40 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  12: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:40 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  13: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:40 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  14: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:40 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  15: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:40 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  16: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:40 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  17: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:41 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  18: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:41 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  19: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:41 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  20: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:41 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  21: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:41 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  22: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:41 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  23: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:41 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  24: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:35:47 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  25: 2025-01-03 → 2025-01-17 | fetched= 2,689 inserted=     0 invalid=0
+2026-06-05 10:36:01 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  26: 2025-01-19 → 2025-02-18 | fetched= 5,928 inserted=     0 invalid=0
+2026-06-05 10:36:15 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  27: 2025-02-18 → 2025-03-20 | fetched= 6,025 inserted=     0 invalid=0
+2026-06-05 10:36:28 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  28: 2025-03-20 → 2025-04-17 | fetched= 5,469 inserted=     0 invalid=0
+2026-06-05 10:36:42 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  29: 2025-04-20 → 2025-05-19 | fetched= 5,760 inserted=     0 invalid=0
+2026-06-05 10:36:56 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  30: 2025-05-19 → 2025-06-18 | fetched= 6,021 inserted=     0 invalid=0
+2026-06-05 10:37:10 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  31: 2025-06-18 → 2025-07-18 | fetched= 5,927 inserted=     0 invalid=0
+2026-06-05 10:37:25 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  32: 2025-07-20 → 2025-08-17 | fetched= 5,517 inserted=     1 invalid=0
+2026-06-05 10:37:40 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  33: 2025-08-17 → 2025-09-16 | fetched= 6,021 inserted=     0 invalid=0
+2026-06-05 10:37:55 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  34: 2025-09-16 → 2025-10-16 | fetched= 6,068 inserted=     0 invalid=0
+2026-06-05 10:38:10 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  35: 2025-10-16 → 2025-11-14 | fetched= 5,791 inserted=     0 invalid=0
+2026-06-05 10:38:24 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  36: 2025-11-16 → 2025-12-15 | fetched= 5,571 inserted=     0 invalid=0
+2026-06-05 10:38:37 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  37: 2025-12-15 → 2026-01-14 | fetched= 5,471 inserted=    71 invalid=0
+2026-06-05 10:38:52 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  38: 2026-01-14 → 2026-02-13 | fetched= 6,019 inserted=    19 invalid=0
+2026-06-05 10:39:06 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  39: 2026-02-15 → 2026-03-15 | fetched= 5,469 inserted=    69 invalid=0
+2026-06-05 10:39:21 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  40: 2026-03-15 → 2026-04-14 | fetched= 5,977 inserted=    77 invalid=0
+2026-06-05 10:39:37 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  41: 2026-04-14 → 2026-05-14 | fetched= 6,069 inserted=    69 invalid=0
+2026-06-05 10:39:47 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk  42: 2026-05-15 → 2026-06-05 | fetched= 4,156 inserted=    56 invalid=0
+2026-06-05 10:39:47 | INFO     | mt5_collector        | price_collector.py:304 |   5min sessions: asian=30,727, london=21,887, london_ny_overlap=17,296, new_york=16,889, off_hours=13,173
+2026-06-05 10:39:47 | INFO     | mt5_collector        | price_collector.py:306 |   5min COMPLETE | fetched=99,972 inserted=362 invalid=0
+2026-06-05 10:39:47 | INFO     | mt5_collector.collection | logger.py:244 | Completed 5min: Fetched 99,972, Inserted 362 new records
+2026-06-05 10:39:47 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 15min
+2026-06-05 10:39:47 | INFO     | mt5_collector        | price_collector.py:237 | 
+──────────────────────────────────────────────────
+  Timeframe : 15min
+  From      : 2023-01-01
+  To        : 2026-06-05
+  Window    : 60 days/chunk
+  Est chunks: ~20
+──────────────────────────────────────────────────
+2026-06-05 10:39:56 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk   1: 2023-01-02 → 2023-03-01 | fetched= 3,587 inserted=    10 invalid=0
+2026-06-05 10:40:05 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk   2: 2023-03-01 → 2023-04-28 | fetched= 3,585 inserted=    10 invalid=0
+2026-06-05 10:40:15 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk   3: 2023-04-30 → 2023-06-29 | fetched= 3,833 inserted=     0 invalid=0
+2026-06-05 10:40:24 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk   4: 2023-06-29 → 2023-08-28 | fetched= 3,798 inserted=    12 invalid=0
+2026-06-05 10:40:34 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk   5: 2023-08-28 → 2023-10-27 | fetched= 3,996 inserted=     4 invalid=0
+2026-06-05 10:40:44 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk   6: 2023-10-29 → 2023-12-26 | fetched= 3,713 inserted=     0 invalid=0
+2026-06-05 10:40:53 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk   7: 2023-12-26 → 2024-02-23 | fetched= 3,796 inserted=     4 invalid=0
+2026-06-05 10:41:03 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk   8: 2024-02-25 → 2024-04-24 | fetched= 3,836 inserted=     0 invalid=0
+2026-06-05 10:41:13 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk   9: 2024-04-24 → 2024-06-23 | fetched= 3,797 inserted=     5 invalid=0
+2026-06-05 10:41:23 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  10: 2024-06-23 → 2024-08-22 | fetched= 3,986 inserted=     4 invalid=0
+2026-06-05 10:41:32 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  11: 2024-08-22 → 2024-10-21 | fetched= 3,813 inserted=     0 invalid=0
+2026-06-05 10:41:42 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  12: 2024-10-21 → 2024-12-20 | fetched= 3,985 inserted=     4 invalid=0
+2026-06-05 10:41:51 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  13: 2024-12-22 → 2025-02-18 | fetched= 3,569 inserted=     0 invalid=0
+2026-06-05 10:42:01 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  14: 2025-02-18 → 2025-04-17 | fetched= 3,832 inserted=     0 invalid=0
+2026-06-05 10:42:11 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  15: 2025-04-20 → 2025-06-18 | fetched= 3,929 inserted=     0 invalid=0
+2026-06-05 10:42:20 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  16: 2025-06-18 → 2025-08-17 | fetched= 3,818 inserted=     1 invalid=0
+2026-06-05 10:42:30 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  17: 2025-08-17 → 2025-10-16 | fetched= 4,033 inserted=     0 invalid=0
+2026-06-05 10:42:40 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  18: 2025-10-16 → 2025-12-15 | fetched= 3,790 inserted=    10 invalid=0
+2026-06-05 10:42:50 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  19: 2025-12-15 → 2026-02-13 | fetched= 3,833 inserted=    33 invalid=0
+2026-06-05 10:43:00 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  20: 2026-02-15 → 2026-04-14 | fetched= 3,818 inserted=    18 invalid=0
+2026-06-05 10:43:09 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk  21: 2026-04-15 → 2026-06-05 | fetched= 3,410 inserted=    10 invalid=0
+2026-06-05 10:43:09 | INFO     | mt5_collector        | price_collector.py:304 |   15min sessions: asian=24,774, london=17,668, london_ny_overlap=13,926, new_york=12,770, off_hours=10,619
+2026-06-05 10:43:09 | INFO     | mt5_collector        | price_collector.py:306 |   15min COMPLETE | fetched=79,757 inserted=125 invalid=0
+2026-06-05 10:43:09 | INFO     | mt5_collector.collection | logger.py:244 | Completed 15min: Fetched 79,757, Inserted 125 new records
+2026-06-05 10:43:09 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 1H
+2026-06-05 10:43:09 | INFO     | mt5_collector        | price_collector.py:237 | 
+──────────────────────────────────────────────────
+  Timeframe : 1H
+  From      : 2023-01-01
+  To        : 2026-06-05
+  Window    : 180 days/chunk
+  Est chunks: ~6
+──────────────────────────────────────────────────
+2026-06-05 10:43:16 | INFO     | mt5_collector        | price_collector.py:293 |   1H chunk   1: 2023-01-02 → 2023-06-29 | fetched= 2,810 inserted=     0 invalid=0
+2026-06-05 10:43:23 | INFO     | mt5_collector        | price_collector.py:293 |   1H chunk   2: 2023-06-29 → 2023-12-26 | fetched= 2,878 inserted=     5 invalid=0
+2026-06-05 10:43:31 | INFO     | mt5_collector        | price_collector.py:293 |   1H chunk   3: 2023-12-26 → 2024-06-23 | fetched= 2,858 inserted=     5 invalid=0
+2026-06-05 10:43:38 | INFO     | mt5_collector        | price_collector.py:293 |   1H chunk   4: 2024-06-23 → 2024-12-20 | fetched= 2,947 inserted=     2 invalid=0
+2026-06-05 10:43:46 | INFO     | mt5_collector        | price_collector.py:293 |   1H chunk   5: 2024-12-22 → 2025-06-18 | fetched= 2,835 inserted=     1 invalid=0
+2026-06-05 10:43:53 | INFO     | mt5_collector        | price_collector.py:293 |   1H chunk   6: 2025-06-18 → 2025-12-15 | fetched= 2,912 inserted=     0 invalid=0
+2026-06-05 10:44:00 | INFO     | mt5_collector        | price_collector.py:293 |   1H chunk   7: 2025-12-16 → 2026-06-05 | fetched= 2,767 inserted=    67 invalid=0
+2026-06-05 10:44:00 | INFO     | mt5_collector        | price_collector.py:304 |   1H sessions: asian=6,193, london=4,420, london_ny_overlap=3,488, new_york=3,251, off_hours=2,655
+2026-06-05 10:44:00 | INFO     | mt5_collector        | price_collector.py:306 |   1H COMPLETE | fetched=20,007 inserted=80 invalid=0
+2026-06-05 10:44:00 | INFO     | mt5_collector.collection | logger.py:244 | Completed 1H: Fetched 20,007, Inserted 80 new records
+2026-06-05 10:44:00 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 4H
+2026-06-05 10:44:00 | INFO     | mt5_collector        | price_collector.py:237 | 
+──────────────────────────────────────────────────
+  Timeframe : 4H
+  From      : 2023-01-01
+  To        : 2026-06-05
+  Window    : 365 days/chunk
+  Est chunks: ~3
+──────────────────────────────────────────────────
+2026-06-05 10:44:05 | INFO     | mt5_collector        | price_collector.py:293 |   4H chunk   1: 2023-01-02 → 2023-12-29 | fetched= 1,564 inserted=    64 invalid=0
+2026-06-05 10:44:09 | INFO     | mt5_collector        | price_collector.py:293 |   4H chunk   2: 2024-01-01 → 2024-12-30 | fetched= 1,567 inserted=    67 invalid=0
+2026-06-05 10:44:13 | INFO     | mt5_collector        | price_collector.py:293 |   4H chunk   3: 2024-12-31 → 2025-12-30 | fetched= 1,588 inserted=    88 invalid=0
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:293 |   4H chunk   4: 2025-12-31 → 2026-06-05 | fetched=   688 inserted=    88 invalid=0
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:304 |   4H sessions: asian=1,769, london=885, london_ny_overlap=882, new_york=986, off_hours=885
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:306 |   4H COMPLETE | fetched=5,407 inserted=307 invalid=0
+2026-06-05 10:44:15 | INFO     | mt5_collector.collection | logger.py:244 | Completed 4H: Fetched 5,407, Inserted 307 new records
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:408 | 
+==================================================
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:409 |   Running gap detection on all timeframes...
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:410 | ==================================================
+2026-06-05 10:44:15 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 | 5min: 2 days with <50% expected candles
+2026-06-05 10:44:15 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2024-12-25: 12/78 candles
+2026-06-05 10:44:15 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2025-01-01: 12/78 candles
+2026-06-05 10:44:15 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2024-12-25 → refetch 2024-12-24 to 2024-12-27
+2026-06-05 10:44:15 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2025-01-01 → refetch 2024-12-31 to 2025-01-03
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:237 | 
+──────────────────────────────────────────────────
+  Timeframe : 5min
+  From      : 2024-12-24
+  To        : 2024-12-27
+  Window    : 30 days/chunk
+  Est chunks: ~1
+──────────────────────────────────────────────────
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk   1: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:304 |   5min sessions: london_ny_overlap=1
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:306 |   5min COMPLETE | fetched=1 inserted=0 invalid=0
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:237 | 
+──────────────────────────────────────────────────
+  Timeframe : 5min
+  From      : 2024-12-31
+  To        : 2025-01-03
+  Window    : 30 days/chunk
+  Est chunks: ~1
+──────────────────────────────────────────────────
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:293 |   5min chunk   1: 2025-01-03 → 2025-01-03 | fetched=     1 inserted=     0 invalid=0
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:304 |   5min sessions: london_ny_overlap=1
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:306 |   5min COMPLETE | fetched=1 inserted=0 invalid=0
+2026-06-05 10:44:15 | INFO     | mt5_collector        | price_collector.py:330 |   5min gap refetch complete | fetched=2 inserted=0
+2026-06-05 10:44:16 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 | 15min: 1 days with <50% expected candles
+2026-06-05 10:44:16 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2022-12-26: 2/26 candles
+2026-06-05 10:44:16 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2022-12-26 → refetch 2022-12-25 to 2022-12-28
+2026-06-05 10:44:16 | INFO     | mt5_collector        | price_collector.py:237 | 
+──────────────────────────────────────────────────
+  Timeframe : 15min
+  From      : 2022-12-25
+  To        : 2022-12-28
+  Window    : 60 days/chunk
+  Est chunks: ~1
+──────────────────────────────────────────────────
+2026-06-05 10:44:16 | INFO     | mt5_collector        | price_collector.py:293 |   15min chunk   1: 2022-12-26 → 2022-12-27 | fetched=    86 inserted=    12 invalid=0
+2026-06-05 10:44:16 | INFO     | mt5_collector        | price_collector.py:304 |   15min sessions: asian=28, london=20, london_ny_overlap=16, new_york=10, off_hours=12
+2026-06-05 10:44:16 | INFO     | mt5_collector        | price_collector.py:306 |   15min COMPLETE | fetched=86 inserted=12 invalid=0
+2026-06-05 10:44:16 | INFO     | mt5_collector        | price_collector.py:330 |   15min gap refetch complete | fetched=86 inserted=12
+2026-06-05 10:44:16 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 | 1H: 1 days with <50% expected candles
+2026-06-05 10:44:16 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2022-12-26: 1/7 candles
+2026-06-05 10:44:16 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2022-12-26 → refetch 2022-12-25 to 2022-12-28
+2026-06-05 10:44:16 | INFO     | mt5_collector        | price_collector.py:237 | 
+──────────────────────────────────────────────────
+  Timeframe : 1H
+  From      : 2022-12-25
+  To        : 2022-12-28
+  Window    : 180 days/chunk
+  Est chunks: ~1
+──────────────────────────────────────────────────
+2026-06-05 10:44:16 | INFO     | mt5_collector        | price_collector.py:293 |   1H chunk   1: 2022-12-26 → 2022-12-27 | fetched=    22 inserted=     3 invalid=0
+2026-06-05 10:44:16 | INFO     | mt5_collector        | price_collector.py:304 |   1H sessions: asian=7, london=5, london_ny_overlap=4, new_york=3, off_hours=3
+2026-06-05 10:44:16 | INFO     | mt5_collector        | price_collector.py:306 |   1H COMPLETE | fetched=22 inserted=3 invalid=0
+2026-06-05 10:44:16 | INFO     | mt5_collector        | price_collector.py:330 |   1H gap refetch complete | fetched=22 inserted=3
+2026-06-05 10:44:16 | INFO     | mt5_collector.validators.gaps | gap_checker.py:93 | 4H: no gaps found
+2026-06-05 10:44:16 | INFO     | mt5_collector        | price_collector.py:148 | MT5 disconnected
+2026-06-05 10:44:16 | INFO     | mt5_collector.collection | logger.py:270 | ============================================================
+2026-06-05 10:44:16 | INFO     | mt5_collector.collection | logger.py:271 | COLLECTION COMPLETED
+2026-06-05 10:44:16 | INFO     | mt5_collector.collection | logger.py:272 | Duration: 0:08:41.095513
+2026-06-05 10:44:16 | INFO     | mt5_collector.collection | logger.py:273 | Timeframes processed: 4
+2026-06-05 10:44:16 | INFO     | mt5_collector.collection | logger.py:274 | Total fetched: 0
+2026-06-05 10:44:16 | INFO     | mt5_collector.collection | logger.py:275 | Total inserted: 0
+2026-06-05 10:44:16 | INFO     | mt5_collector.collection | logger.py:276 | Total duplicates skipped: 0
+2026-06-05 10:44:16 | INFO     | mt5_collector.collection | logger.py:277 | Total invalid records: 0
+2026-06-05 10:44:16 | INFO     | mt5_collector.collection | logger.py:284 | ============================================================

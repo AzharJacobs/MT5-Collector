@@ -121,20 +121,23 @@ class MT5Collector:
     # -----------------------------------------------------------------------
     def initialize(self) -> bool:
         logger.info("Connecting to MT5...")
-        if not mt5.initialize():
+        login  = MT5_CONFIG.get("login")
+        passwd = MT5_CONFIG.get("password", "")
+        server = MT5_CONFIG.get("server", "")
+
+        if login:
+            # Pass credentials directly to initialize() — required when the
+            # terminal does not accept a separate mt5.login() call (e.g. Trial accounts).
+            ok = mt5.initialize(login=login, password=passwd, server=server)
+        else:
+            ok = mt5.initialize()
+
+        if not ok:
             logger.error(f"MT5 init failed: {mt5.last_error()}")
             return False
 
-        if MT5_CONFIG.get("login"):
-            ok = mt5.login(
-                MT5_CONFIG["login"],
-                password=MT5_CONFIG.get("password", ""),
-                server=MT5_CONFIG.get("server", ""),
-            )
-            if not ok:
-                logger.error(f"MT5 login failed: {mt5.last_error()}")
-                return False
-            logger.info(f"Logged in: account {MT5_CONFIG['login']}")
+        if login:
+            logger.info(f"Logged in: account {login}")
 
         self.initialized = True
         info = mt5.terminal_info()

@@ -24,3 +24,5 @@ Traceback (most recent call last):
 psycopg2.errors.InvalidTableDefinition: cannot change name of view column "direction" to "spread"
 HINT:  Use ALTER VIEW ... RENAME COLUMN ... to change name of view column instead.
 
+2026-06-15 20:48:00 | ERROR    | mt5_collector        | price_collector.py:135 | MT5 login failed: (-6, 'Terminal: Authorization failed')
+2026-06-15 20:48:37 | ERROR    | mt5_collector        | price_collector.py:125 | MT5 init failed: (-6, 'Terminal: Authorization failed')
