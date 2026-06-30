@@ -32,17 +32,17 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 10000))
 
 # Timeframes — display name → MT5 constant name
 TIMEFRAMES = [
-    ("5min",  "TIMEFRAME_M5"),
     ("15min", "TIMEFRAME_M15"),
     ("1H",    "TIMEFRAME_H1"),
     ("4H",    "TIMEFRAME_H4"),
+    ("1D",    "TIMEFRAME_D1"),
 ]
 
 # Date range
-DATA_START_DATE = os.getenv("DATA_START_DATE", "2022-01-01")
-DATA_END_DATE   = os.getenv("DATA_END_DATE",   "2026-01-01")
+DATA_START_DATE = os.getenv("DATA_START_DATE", "2023-01-01")
+DATA_END_DATE   = os.getenv("DATA_END_DATE",   "2026-06-28")
 
 # Timeframe display order for DB views
 TIMEFRAME_ORDER = {
-    "5min": 1, "15min": 2, "1H": 3, "4H": 4,
+    "15min": 1, "1H": 2, "4H": 3, "1D": 4,
 }

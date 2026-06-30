@@ -9639,3 +9639,79 @@ HINT:  Use ALTER VIEW ... RENAME COLUMN ... to change name of view column instea
 2026-06-15 21:28:46 | INFO     | mt5_collector.verify | main.py:86 |   Duplicates:                0 dropped
 2026-06-15 21:29:17 | INFO     | mt5_collector.verify | main.py:103 |   Anomalies:                 0 dropped
 2026-06-15 21:29:18 | INFO     | mt5_collector.verify | main.py:108 |   Written:                   0
+2026-06-29 17:01:32 | INFO     | mt5_collector.collection | logger.py:205 | ============================================================
+2026-06-29 17:01:32 | INFO     | mt5_collector.collection | logger.py:206 | COLLECTION STARTED
+2026-06-29 17:01:32 | INFO     | mt5_collector.collection | logger.py:207 | Symbol: XAUUSDm
+2026-06-29 17:01:32 | INFO     | mt5_collector.collection | logger.py:208 | Mode: full
+2026-06-29 17:01:32 | INFO     | mt5_collector.collection | logger.py:209 | Time: 2026-06-29 17:01:32.017521
+2026-06-29 17:01:32 | INFO     | mt5_collector.collection | logger.py:210 | ============================================================
+2026-06-29 17:01:40 | INFO     | mt5_collector.collection | logger.py:270 | ============================================================
+2026-06-29 17:01:40 | INFO     | mt5_collector.collection | logger.py:271 | COLLECTION FAILED
+2026-06-29 17:01:40 | INFO     | mt5_collector.collection | logger.py:272 | Duration: 0:00:08.665275
+2026-06-29 17:01:40 | INFO     | mt5_collector.collection | logger.py:273 | Timeframes processed: 0
+2026-06-29 17:01:40 | INFO     | mt5_collector.collection | logger.py:274 | Total fetched: 0
+2026-06-29 17:01:40 | INFO     | mt5_collector.collection | logger.py:275 | Total inserted: 0
+2026-06-29 17:01:40 | INFO     | mt5_collector.collection | logger.py:276 | Total duplicates skipped: 0
+2026-06-29 17:01:40 | INFO     | mt5_collector.collection | logger.py:277 | Total invalid records: 0
+2026-06-29 17:01:40 | INFO     | mt5_collector.collection | logger.py:284 | ============================================================
+2026-06-29 17:08:17 | INFO     | mt5_collector.collection | logger.py:205 | ============================================================
+2026-06-29 17:08:17 | INFO     | mt5_collector.collection | logger.py:206 | COLLECTION STARTED
+2026-06-29 17:08:17 | INFO     | mt5_collector.collection | logger.py:207 | Symbol: XAUUSDm
+2026-06-29 17:08:17 | INFO     | mt5_collector.collection | logger.py:208 | Mode: full
+2026-06-29 17:08:17 | INFO     | mt5_collector.collection | logger.py:209 | Time: 2026-06-29 17:08:17.857008
+2026-06-29 17:08:17 | INFO     | mt5_collector.collection | logger.py:210 | ============================================================
+2026-06-29 17:08:23 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 15min
+2026-06-29 17:11:51 | INFO     | mt5_collector.collection | logger.py:244 | Completed 15min: Fetched 82,311, Inserted 50 new records
+2026-06-29 17:11:51 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 1H
+2026-06-29 17:12:43 | INFO     | mt5_collector.collection | logger.py:244 | Completed 1H: Fetched 20,599, Inserted 115 new records
+2026-06-29 17:12:43 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 4H
+2026-06-29 17:12:58 | INFO     | mt5_collector.collection | logger.py:244 | Completed 4H: Fetched 5,574, Inserted 82 new records
+2026-06-29 17:12:58 | INFO     | mt5_collector.collection | logger.py:214 | Processing timeframe: 1D
+2026-06-29 17:13:01 | INFO     | mt5_collector.collection | logger.py:244 | Completed 1D: Fetched 1,086, Inserted 86 new records
+2026-06-29 17:13:01 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 | 15min: 9 days with <50% expected candles
+2026-06-29 17:13:01 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2022-02-08: 3/26 candles
+2026-06-29 17:13:01 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2022-12-26: 4/26 candles
+2026-06-29 17:13:01 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2023-01-02: 4/26 candles
+2026-06-29 17:13:01 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2023-12-25: 4/26 candles
+2026-06-29 17:13:01 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2024-01-01: 4/26 candles
+2026-06-29 17:13:01 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2024-12-25: 4/26 candles
+2026-06-29 17:13:01 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2025-01-01: 4/26 candles
+2026-06-29 17:13:01 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2025-12-25: 4/26 candles
+2026-06-29 17:13:01 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2026-01-01: 4/26 candles
+2026-06-29 17:13:01 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2022-02-08 → refetch 2022-02-07 to 2022-02-10
+2026-06-29 17:13:01 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2022-12-26 → refetch 2022-12-25 to 2022-12-28
+2026-06-29 17:13:01 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2023-01-02 → refetch 2023-01-01 to 2023-01-04
+2026-06-29 17:13:01 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2023-12-25 → refetch 2023-12-24 to 2023-12-27
+2026-06-29 17:13:01 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2024-01-01 → refetch 2023-12-31 to 2024-01-03
+2026-06-29 17:13:01 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2024-12-25 → refetch 2024-12-24 to 2024-12-27
+2026-06-29 17:13:01 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2025-01-01 → refetch 2024-12-31 to 2025-01-03
+2026-06-29 17:13:01 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2025-12-25 → refetch 2025-12-24 to 2025-12-27
+2026-06-29 17:13:01 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2026-01-01 → refetch 2025-12-31 to 2026-01-03
+2026-06-29 17:13:05 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:76 | 1H: 8 days with <50% expected candles
+2026-06-29 17:13:05 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2022-12-26: 1/7 candles
+2026-06-29 17:13:05 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2023-01-02: 1/7 candles
+2026-06-29 17:13:05 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2023-12-25: 1/7 candles
+2026-06-29 17:13:05 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2024-01-01: 1/7 candles
+2026-06-29 17:13:05 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2024-12-25: 1/7 candles
+2026-06-29 17:13:05 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2025-01-01: 1/7 candles
+2026-06-29 17:13:05 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2025-12-25: 1/7 candles
+2026-06-29 17:13:05 | WARNING  | mt5_collector.validators.gaps | gap_checker.py:78 |   2026-01-01: 1/7 candles
+2026-06-29 17:13:05 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2022-12-26 → refetch 2022-12-25 to 2022-12-28
+2026-06-29 17:13:05 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2023-01-02 → refetch 2023-01-01 to 2023-01-04
+2026-06-29 17:13:05 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2023-12-25 → refetch 2023-12-24 to 2023-12-27
+2026-06-29 17:13:05 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2024-01-01 → refetch 2023-12-31 to 2024-01-03
+2026-06-29 17:13:05 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2024-12-25 → refetch 2024-12-24 to 2024-12-27
+2026-06-29 17:13:05 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2025-01-01 → refetch 2024-12-31 to 2025-01-03
+2026-06-29 17:13:05 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2025-12-25 → refetch 2025-12-24 to 2025-12-27
+2026-06-29 17:13:05 | INFO     | mt5_collector.validators.gaps | gap_checker.py:101 |   Gap window: 2026-01-01 → refetch 2025-12-31 to 2026-01-03
+2026-06-29 17:13:07 | INFO     | mt5_collector.validators.gaps | gap_checker.py:93 | 4H: no gaps found
+2026-06-29 17:13:07 | INFO     | mt5_collector.validators.gaps | gap_checker.py:93 | 1D: no gaps found
+2026-06-29 17:13:07 | INFO     | mt5_collector.collection | logger.py:270 | ============================================================
+2026-06-29 17:13:07 | INFO     | mt5_collector.collection | logger.py:271 | COLLECTION COMPLETED
+2026-06-29 17:13:07 | INFO     | mt5_collector.collection | logger.py:272 | Duration: 0:04:49.750650
+2026-06-29 17:13:07 | INFO     | mt5_collector.collection | logger.py:273 | Timeframes processed: 4
+2026-06-29 17:13:07 | INFO     | mt5_collector.collection | logger.py:274 | Total fetched: 0
+2026-06-29 17:13:07 | INFO     | mt5_collector.collection | logger.py:275 | Total inserted: 0
+2026-06-29 17:13:07 | INFO     | mt5_collector.collection | logger.py:276 | Total duplicates skipped: 0
+2026-06-29 17:13:07 | INFO     | mt5_collector.collection | logger.py:277 | Total invalid records: 0
+2026-06-29 17:13:07 | INFO     | mt5_collector.collection | logger.py:284 | ============================================================

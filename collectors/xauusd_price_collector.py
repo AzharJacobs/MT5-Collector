@@ -36,10 +36,10 @@ logger = get_logger("xauusd_collector")
 BROKER_UTC_OFFSET = 3
 
 WINDOW_DAYS = {
-    "5min":  30,
     "15min": 60,
     "1H":    180,
     "4H":    365,
+    "1D":    500,
 }
 
 
@@ -73,10 +73,10 @@ def parse_date(date_str, default: datetime) -> datetime:
 class MT5Collector:
 
     TIMEFRAME_MAP = {
-        "TIMEFRAME_M5":  mt5.TIMEFRAME_M5,
         "TIMEFRAME_M15": mt5.TIMEFRAME_M15,
         "TIMEFRAME_H1":  mt5.TIMEFRAME_H1,
         "TIMEFRAME_H4":  mt5.TIMEFRAME_H4,
+        "TIMEFRAME_D1":  mt5.TIMEFRAME_D1,
     }
 
     DAYS_OF_WEEK = {

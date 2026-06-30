@@ -368,8 +368,8 @@ class DatabaseManager:
         GROUP BY timeframe
         ORDER BY
             CASE timeframe
-                WHEN '5min' THEN 5 WHEN '15min' THEN 7
-                WHEN '1H'   THEN 9 WHEN '4H'    THEN 10
+                WHEN '15min' THEN 1 WHEN '1H' THEN 2
+                WHEN '4H'   THEN 3 WHEN '1D'  THEN 4
                 ELSE 99
             END;
         """
